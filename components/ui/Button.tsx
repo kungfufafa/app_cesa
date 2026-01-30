@@ -1,67 +1,143 @@
-import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, TouchableOpacityProps } from 'react-native';
+import { TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { LinearGradient } from 'expo-linear-gradient';
+import { cssInterop } from 'nativewind';
+import { Platform, Pressable, View } from 'react-native';
 
-interface ButtonProps extends TouchableOpacityProps {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
-  size?: 'default' | 'sm' | 'lg' | 'icon';
-  loading?: boolean;
-  className?: string;
-  textClassName?: string;
-}
-
-export const Button = React.forwardRef<React.ElementRef<typeof TouchableOpacity>, ButtonProps>(
-  ({ className, variant = 'primary', size = 'default', loading = false, children, textClassName, disabled, ...props }, ref) => {
-    
-    const baseStyles = "flex-row items-center justify-center rounded-md font-medium disabled:opacity-50";
-    
-    const variants = {
-      primary: "bg-indigo-600 active:bg-indigo-700",
-      secondary: "bg-slate-100 active:bg-slate-200 dark:bg-slate-800 dark:active:bg-slate-700",
-      outline: "border border-slate-200 bg-white active:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:active:bg-slate-900",
-      ghost: "active:bg-slate-100 dark:active:bg-slate-800",
-      destructive: "bg-red-500 active:bg-red-600",
-    };
-
-    const sizes = {
-      default: "h-12 px-4 py-2",
-      sm: "h-9 rounded-md px-3",
-      lg: "h-14 rounded-md px-8",
-      icon: "h-10 w-10",
-    };
-
-    const textStyles = {
-      primary: "text-white",
-      secondary: "text-slate-900 dark:text-slate-50",
-      outline: "text-slate-900 dark:text-slate-50",
-      ghost: "text-slate-900 dark:text-slate-50",
-      destructive: "text-white",
-    };
-
-    return (
-      <TouchableOpacity
-        ref={ref}
-        className={cn(
-          baseStyles,
-          variants[variant],
-          sizes[size],
-          loading && "opacity-70",
-          className
-        )}
-        disabled={loading || disabled}
-        {...props}
-      >
-        {loading ? (
-          <ActivityIndicator color={variant === 'outline' || variant === 'ghost' ? '#4f46e5' : 'white'} />
-        ) : (
-          typeof children === 'string' ? (
-             <Text className={cn("text-base font-semibold", textStyles[variant], textClassName)}>{children}</Text>
-          ) : (
-            children
-          )
-        )}
-      </TouchableOpacity>
-    );
+const buttonVariants = cva(
+  cn(
+    'group relative shrink-0 flex-row items-center justify-center gap-2 rounded-md shadow-none overflow-hidden',
+    Platform.select({
+      web: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap outline-none transition-all focus-visible:ring-[3px] disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+    })
+  ),
+  {
+    variants: {
+      variant: {
+        default: cn(
+          'bg-transparent shadow-md shadow-black/20 active:opacity-90',
+          Platform.select({ web: 'hover:opacity-95' })
+        ),
+        destructive: cn(
+          'bg-destructive active:bg-destructive/90 dark:bg-destructive/60 shadow-sm shadow-black/5',
+          Platform.select({
+            web: 'hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40',
+          })
+        ),
+        outline: cn(
+          'border-border bg-background active:bg-accent dark:bg-input/30 dark:border-input dark:active:bg-input/50 border shadow-sm shadow-black/5',
+          Platform.select({
+            web: 'hover:bg-accent dark:hover:bg-input/50',
+          })
+        ),
+        secondary: cn(
+          'bg-secondary active:bg-secondary/80 shadow-sm shadow-black/5',
+          Platform.select({ web: 'hover:bg-secondary/80' })
+        ),
+        ghost: cn(
+          'active:bg-accent dark:active:bg-accent/50',
+          Platform.select({ web: 'hover:bg-accent dark:hover:bg-accent/50' })
+        ),
+        link: '',
+      },
+      size: {
+        default: cn('h-10 px-4 py-2 sm:h-9', Platform.select({ web: 'has-[>svg]:px-3' })),
+        sm: cn('h-9 gap-1.5 rounded-md px-3 sm:h-8', Platform.select({ web: 'has-[>svg]:px-2.5' })),
+        lg: cn('h-11 rounded-md px-6 sm:h-10', Platform.select({ web: 'has-[>svg]:px-4' })),
+        icon: 'h-10 w-10 sm:h-9 sm:w-9',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'default',
+    },
   }
 );
-Button.displayName = "Button";
+
+const buttonTextVariants = cva(
+  cn(
+    'text-foreground text-sm font-medium',
+    Platform.select({ web: 'pointer-events-none transition-colors' })
+  ),
+  {
+    variants: {
+      variant: {
+        default: 'text-primary-foreground',
+        destructive: 'text-white',
+        outline: cn(
+          'group-active:text-accent-foreground',
+          Platform.select({ web: 'group-hover:text-accent-foreground' })
+        ),
+        secondary: 'text-secondary-foreground',
+        ghost: 'group-active:text-accent-foreground',
+        link: cn(
+          'text-primary group-active:underline',
+          Platform.select({ web: 'underline-offset-4 hover:underline group-hover:underline' })
+        ),
+      },
+      size: {
+        default: '',
+        sm: '',
+        lg: '',
+        icon: '',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'default',
+    },
+  }
+);
+
+const PRIMARY_GRADIENT = ['#5A93FF', '#2F6BFF'];
+const PRIMARY_GRADIENT_LOCATIONS = [0, 1];
+const PRIMARY_HIGHLIGHT = ['rgba(255,255,255,0.45)', 'rgba(255,255,255,0)'];
+cssInterop(LinearGradient, {
+  className: {
+    target: 'style',
+  },
+});
+
+type ButtonProps = React.ComponentProps<typeof Pressable> &
+  React.RefAttributes<typeof Pressable> &
+  VariantProps<typeof buttonVariants>;
+
+function Button({ className, variant, size, children, ...props }: ButtonProps) {
+  const isDefault = !variant || variant === 'default';
+  return (
+    <TextClassContext.Provider value={buttonTextVariants({ variant, size })}>
+      <Pressable
+        className={cn(props.disabled && 'opacity-50', buttonVariants({ variant, size }), className)}
+        role="button"
+        {...props}
+      >
+        {(state) => (
+          <>
+            {isDefault && (
+              <View className="absolute inset-0 pointer-events-none overflow-hidden">
+                <LinearGradient
+                  colors={PRIMARY_GRADIENT}
+                  locations={PRIMARY_GRADIENT_LOCATIONS}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  className="absolute inset-0 rounded-[0.65rem]"
+                />
+                <LinearGradient
+                  colors={PRIMARY_HIGHLIGHT}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  className="absolute inset-x-0 top-0 h-[45%] rounded-t-[0.65rem]"
+                />
+              </View>
+            )}
+            {typeof children === 'function' ? children(state) : children}
+          </>
+        )}
+      </Pressable>
+    </TextClassContext.Provider>
+  );
+}
+
+export { Button, buttonTextVariants, buttonVariants };
+export type { ButtonProps };

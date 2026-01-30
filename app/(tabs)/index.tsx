@@ -1,13 +1,26 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, SafeAreaView } from 'react-native';
-import { useLocation, useDistance } from '@/hooks/useAttendance';
-import { LiveClock } from '@/components/features/attendance/LiveClock';
-import { LocationMap } from '@/components/features/attendance/LocationMap';
-import { StatusCard } from '@/components/features/attendance/StatusCard';
-import { CameraModal } from '@/components/features/attendance/CameraModal';
-import { getTodayStatus, clockIn, clockOut, AttendanceStatus } from '@/services/attendance';
-import { MapPin, Camera } from 'lucide-react-native';
-import { useAuthStore } from '@/store/useAuthStore';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  RefreshControl,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useLocation, useDistance } from "@/hooks/useAttendance";
+import { LiveClock } from "@/components/features/attendance/LiveClock";
+import { LocationMap } from "@/components/features/attendance/LocationMap";
+import { StatusCard } from "@/components/features/attendance/StatusCard";
+import { CameraModal } from "@/components/features/attendance/CameraModal";
+import {
+  getTodayStatus,
+  clockIn,
+  clockOut,
+  AttendanceStatus,
+} from "@/services/attendance";
+import { MapPin, Camera } from "lucide-react-native";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const OFFICE_LOCATION = {
   latitude: -6.175392,
@@ -22,7 +35,7 @@ export default function DashboardScreen() {
     location?.latitude,
     location?.longitude,
     OFFICE_LOCATION.latitude,
-    OFFICE_LOCATION.longitude
+    OFFICE_LOCATION.longitude,
   );
 
   const [status, setStatus] = useState<AttendanceStatus | null>(null);
@@ -55,13 +68,19 @@ export default function DashboardScreen() {
 
   const handleClockAction = () => {
     if (!location) {
-        Alert.alert("Location needed", "Please wait for location to be detected.");
-        return;
+      Alert.alert(
+        "Location needed",
+        "Please wait for location to be detected.",
+      );
+      return;
     }
-    
+
     if (distance === null || distance > OFFICE_LOCATION.radiusMeters) {
-        Alert.alert("Out of Range", `You are ${Math.round(distance || 0)}m away from office. Must be within ${OFFICE_LOCATION.radiusMeters}m.`);
-        return;
+      Alert.alert(
+        "Out of Range",
+        `You are ${Math.round(distance || 0)}m away from office. Must be within ${OFFICE_LOCATION.radiusMeters}m.`,
+      );
+      return;
     }
 
     setCameraVisible(true);
@@ -72,104 +91,148 @@ export default function DashboardScreen() {
     setLoading(true);
 
     try {
-        if (!location) return;
+      if (!location) return;
 
-        if (status?.clockedIn) {
-            await clockOut({
-                latitude: location.latitude,
-                longitude: location.longitude,
-                photo: photoBase64
-            });
-            Alert.alert("Success", "Clocked Out Successfully!");
-        } else {
-             await clockIn({
-                latitude: location.latitude,
-                longitude: location.longitude,
-                photo: photoBase64
-            });
-            Alert.alert("Success", "Clocked In Successfully!");
-        }
-        await fetchStatus();
+      if (status?.clockedIn) {
+        await clockOut({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          photo: photoBase64,
+        });
+        Alert.alert("Success", "Clocked Out Successfully!");
+      } else {
+        await clockIn({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          photo: photoBase64,
+        });
+        Alert.alert("Success", "Clocked In Successfully!");
+      }
+      await fetchStatus();
     } catch {
-        Alert.alert("Error", "Failed to submit attendance.");
+      Alert.alert("Error", "Failed to submit attendance.");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
-  const isWithinRange = distance !== null && distance <= OFFICE_LOCATION.radiusMeters;
+  const isWithinRange =
+    distance !== null && distance <= OFFICE_LOCATION.radiusMeters;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    <SafeAreaView className="flex-1 bg-background">
+      <ScrollView
+        contentContainerClassName="p-5 pb-24"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
-        <View style={styles.header}>
-            <View>
-                <Text style={styles.greeting}>Hello, {user?.name || 'User'}</Text>
-                <Text style={styles.subGreeting}>Let&apos;s get to work!</Text>
-            </View>
-            <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{user?.name ? user.name.charAt(0).toUpperCase() : 'U'}</Text>
-            </View>
+        <View className="flex-row justify-between items-center mb-6">
+          <View>
+            <Text className="text-xl font-semibold text-foreground tracking-tight">
+              Good morning, {user?.name?.split(" ")[0] || "User"}
+            </Text>
+            <Text className="text-sm text-muted-foreground">
+              Ready to work today?
+            </Text>
+          </View>
+          <View className="w-10 h-10 rounded-full bg-secondary items-center justify-center border border-border">
+            <Text className="text-foreground text-sm font-medium">
+              {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+            </Text>
+          </View>
         </View>
 
         <LiveClock />
 
         {status && (
-            <StatusCard 
-                clockedIn={status.clockedIn}
-                shiftStart={status.shiftStart}
-                shiftEnd={status.shiftEnd}
-                lastClockIn={status.lastClockIn}
-                lastClockOut={status.lastClockOut}
-            />
+          <StatusCard
+            clockedIn={status.clockedIn}
+            shiftStart={status.shiftStart}
+            shiftEnd={status.shiftEnd}
+            lastClockIn={status.lastClockIn}
+            lastClockOut={status.lastClockOut}
+          />
         )}
 
-        <View style={styles.mapContainer}>
-             <View style={styles.locationHeader}>
-                <MapPin size={18} color="#4b5563" />
-                <Text style={styles.locationTitle}>Current Location</Text>
-                {distance !== null && (
-                    <Text style={[styles.distanceBadge, isWithinRange ? styles.textGreen : styles.textRed]}>
-                        {Math.round(distance)}m away
-                    </Text>
-                )}
+        <View className="mt-6">
+          <View className="flex-row items-center mb-3 justify-between">
+            <View className="flex-row items-center gap-2">
+              <MapPin
+                size={16}
+                className="text-muted-foreground"
+                color="#a1a1aa"
+              />
+              <Text className="text-sm font-medium text-foreground">
+                Location
+              </Text>
             </View>
-            <LocationMap 
-                userLatitude={location?.latitude}
-                userLongitude={location?.longitude}
-                officeLatitude={OFFICE_LOCATION.latitude}
-                officeLongitude={OFFICE_LOCATION.longitude}
-                allowedRadius={OFFICE_LOCATION.radiusMeters}
-            />
-             {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
+            {distance !== null && (
+              <View
+                className={`px-2 py-0.5 rounded-md border ${
+                  isWithinRange
+                    ? "bg-green-500/10 border-green-500/20"
+                    : "bg-red-500/10 border-red-500/20"
+                }`}
+              >
+                <Text
+                  className={`text-xs font-medium ${
+                    isWithinRange
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {Math.round(distance)}m away
+                </Text>
+              </View>
+            )}
+          </View>
+          <LocationMap
+            officeLatitude={OFFICE_LOCATION.latitude}
+            officeLongitude={OFFICE_LOCATION.longitude}
+            allowedRadius={OFFICE_LOCATION.radiusMeters}
+          />
+          {errorMsg && (
+            <Text className="text-destructive text-xs mt-2">{errorMsg}</Text>
+          )}
         </View>
-
       </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity 
-            style={[
-                styles.actionButton, 
-                status?.clockedIn ? styles.buttonOut : styles.buttonIn,
-                (!isWithinRange || loading || !location) && styles.buttonDisabled
-            ]}
-            onPress={handleClockAction}
-            disabled={!isWithinRange || loading || !location}
+      <View className="absolute bottom-0 left-0 right-0 bg-background/80 p-5 border-t border-border items-center backdrop-blur-md">
+        <TouchableOpacity
+          className={`w-full h-12 rounded-lg flex-row justify-center items-center border ${
+            !isWithinRange || loading || !location
+              ? "bg-muted border-transparent"
+              : status?.clockedIn
+                ? "bg-destructive border-transparent"
+                : "bg-primary border-transparent"
+          }`}
+          onPress={handleClockAction}
+          disabled={!isWithinRange || loading || !location}
         >
-            <Camera size={24} color="white" style={{ marginRight: 8 }} />
-            <Text style={styles.buttonText}>
-                {loading ? 'Processing...' : status?.clockedIn ? 'Clock Out' : 'Clock In'}
-            </Text>
+          <Camera
+            size={20}
+            color={!isWithinRange || loading || !location ? "#a1a1aa" : "white"}
+            className="mr-2"
+          />
+          <Text
+            className={`text-base font-medium ${!isWithinRange || loading || !location ? "text-muted-foreground" : "text-primary-foreground"}`}
+          >
+            {loading
+              ? "Processing..."
+              : status?.clockedIn
+                ? "Clock Out"
+                : "Clock In"}
+          </Text>
         </TouchableOpacity>
-         {!isWithinRange && location && (
-            <Text style={styles.warningText}>You must be at the office to clock in/out.</Text>
+        {!isWithinRange && location && (
+          <Text className="mt-3 text-destructive text-xs font-medium">
+            You must be at the office to clock in/out.
+          </Text>
         )}
       </View>
 
-      <CameraModal 
+      <CameraModal
         visible={cameraVisible}
         onClose={() => setCameraVisible(false)}
         onCapture={handleCapture}
@@ -177,115 +240,3 @@ export default function DashboardScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 100,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  subGreeting: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#3b82f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  mapContainer: {
-    marginTop: 10,
-  },
-  locationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 6,
-  },
-  locationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  distanceBadge: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 'auto',
-  },
-  textGreen: {
-    color: '#16a34a',
-  },
-  textRed: {
-    color: '#dc2626',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'white',
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    alignItems: 'center',
-  },
-  actionButton: {
-    width: '100%',
-    height: 56,
-    borderRadius: 28,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonIn: {
-    backgroundColor: '#2563eb',
-  },
-  buttonOut: {
-    backgroundColor: '#dc2626',
-  },
-  buttonDisabled: {
-    backgroundColor: '#9ca3af',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  warningText: {
-    marginTop: 8,
-    color: '#dc2626',
-    fontSize: 12,
-  },
-  errorText: {
-      color: 'red',
-      fontSize: 12,
-      marginTop: 4,
-  }
-});

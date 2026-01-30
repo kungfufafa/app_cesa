@@ -1,26 +1,22 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import MapView, { Marker, Circle, PROVIDER_DEFAULT } from 'react-native-maps';
+import React from "react";
+import { View } from "react-native";
+import MapView, { Marker, Circle, PROVIDER_DEFAULT } from "react-native-maps";
 
 interface LocationMapProps {
-  userLatitude?: number;
-  userLongitude?: number;
   officeLatitude: number;
   officeLongitude: number;
   allowedRadius: number;
 }
 
 export const LocationMap = ({
-  userLatitude,
-  userLongitude,
   officeLatitude,
   officeLongitude,
   allowedRadius,
 }: LocationMapProps) => {
   return (
-    <View style={styles.container}>
+    <View className="h-48 w-full rounded-xl overflow-hidden my-3 border border-gray-200 dark:border-gray-800">
       <MapView
-        style={styles.map}
+        className="w-full h-full"
         provider={PROVIDER_DEFAULT}
         initialRegion={{
           latitude: officeLatitude,
@@ -46,19 +42,3 @@ export const LocationMap = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    height: 200,
-    width: '100%',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginVertical: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-});

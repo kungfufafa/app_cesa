@@ -1,7 +1,13 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { X, SwitchCamera } from 'lucide-react-native';
+import React, { useState, useRef } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  ActivityIndicator,
+} from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { X, SwitchCamera } from "lucide-react-native";
 
 interface CameraModalProps {
   visible: boolean;
@@ -9,9 +15,13 @@ interface CameraModalProps {
   onCapture: (base64: string) => void;
 }
 
-export const CameraModal = ({ visible, onClose, onCapture }: CameraModalProps) => {
+export const CameraModal = ({
+  visible,
+  onClose,
+  onCapture,
+}: CameraModalProps) => {
   const [permission, requestPermission] = useCameraPermissions();
-  const [facing, setFacing] = useState<'front' | 'back'>('front');
+  const [facing, setFacing] = useState<"front" | "back">("front");
   const cameraRef = useRef<CameraView>(null);
   const [processing, setProcessing] = useState(false);
 
@@ -22,13 +32,21 @@ export const CameraModal = ({ visible, onClose, onCapture }: CameraModalProps) =
   if (!permission.granted) {
     return (
       <Modal visible={visible} animationType="slide">
-        <View style={styles.container}>
-          <Text style={styles.message}>We need your permission to show the camera</Text>
-          <TouchableOpacity onPress={requestPermission} style={styles.button}>
-            <Text style={styles.buttonText}>Grant Permission</Text>
+        <View className="flex-1 justify-center bg-black p-5">
+          <Text className="text-center pb-2.5 text-white">
+            We need your permission to show the camera
+          </Text>
+          <TouchableOpacity
+            onPress={requestPermission}
+            className="p-2.5 bg-white rounded-md self-center"
+          >
+            <Text className="text-base text-black">Grant Permission</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-             <X color="white" size={24} />
+          <TouchableOpacity
+            onPress={onClose}
+            className="absolute top-10 right-5 p-2.5"
+          >
+            <X color="white" size={24} />
           </TouchableOpacity>
         </View>
       </Modal>
@@ -36,48 +54,58 @@ export const CameraModal = ({ visible, onClose, onCapture }: CameraModalProps) =
   }
 
   const toggleCameraFacing = () => {
-    setFacing(current => (current === 'back' ? 'front' : 'back'));
+    setFacing((current) => (current === "back" ? "front" : "back"));
   };
 
   const takePicture = async () => {
     if (cameraRef.current && !processing) {
-        setProcessing(true);
-        try {
-            const photo = await cameraRef.current.takePictureAsync({
-                quality: 0.5,
-                base64: true,
-                skipProcessing: true,
-            });
-            if (photo?.base64) {
-                onCapture(photo.base64);
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setProcessing(false);
+      setProcessing(true);
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.5,
+          base64: true,
+          skipProcessing: true,
+        });
+        if (photo?.base64) {
+          onCapture(photo.base64);
         }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setProcessing(false);
+      }
     }
   };
 
   return (
     <Modal visible={visible} animationType="slide">
-      <View style={styles.container}>
-        <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.controlButton} onPress={onClose}>
-                <X color="white" size={32} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-                style={[styles.captureButton, processing && styles.disabledButton]} 
-                onPress={takePicture}
-                disabled={processing}
+      <View className="flex-1 justify-center bg-black">
+        <CameraView className="flex-1" facing={facing} ref={cameraRef}>
+          <View className="flex-1 flex-row bg-transparent mb-10 justify-around items-end">
+            <TouchableOpacity
+              className="p-3 bg-black/50 rounded-full"
+              onPress={onClose}
             >
-               {processing ? <ActivityIndicator color="black" /> : <View style={styles.captureInner} />}
+              <X color="white" size={32} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.controlButton} onPress={toggleCameraFacing}>
-                <SwitchCamera color="white" size={32} />
+            <TouchableOpacity
+              className={`w-20 h-20 rounded-full bg-white justify-center items-center ${processing ? "opacity-70" : ""}`}
+              onPress={takePicture}
+              disabled={processing}
+            >
+              {processing ? (
+                <ActivityIndicator color="black" />
+              ) : (
+                <View className="w-[70px] h-[70px] rounded-full border-2 border-black bg-white" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="p-3 bg-black/50 rounded-full"
+              onPress={toggleCameraFacing}
+            >
+              <SwitchCamera color="white" size={32} />
             </TouchableOpacity>
           </View>
         </CameraView>
@@ -85,66 +113,3 @@ export const CameraModal = ({ visible, onClose, onCapture }: CameraModalProps) =
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'black',
-  },
-  message: {
-    textAlign: 'center',
-    paddingBottom: 10,
-    color: 'white',
-  },
-  camera: {
-    flex: 1,
-  },
-  buttonContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: 'transparent',
-    marginBottom: 40,
-    justifyContent: 'space-around',
-    alignItems: 'flex-end',
-  },
-  button: {
-    padding: 10,
-    backgroundColor: 'white',
-    borderRadius: 5,
-  },
-  buttonText: {
-    fontSize: 16,
-    color: 'black',
-  },
-  controlButton: {
-    padding: 12,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 50,
-  },
-  captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  captureInner: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 2,
-    borderColor: 'black',
-    backgroundColor: 'white',
-  },
-  disabledButton: {
-    opacity: 0.7,
-  },
-  closeButton: {
-      position: 'absolute',
-      top: 40,
-      right: 20,
-      padding: 10,
-  }
-});
