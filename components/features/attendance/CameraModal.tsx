@@ -1,13 +1,8 @@
 import React, { useState, useRef } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  ActivityIndicator,
-} from "react-native";
+import { View, TouchableOpacity, Modal, ActivityIndicator } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { X, SwitchCamera } from "lucide-react-native";
+import { Text } from "@/components/ui/text";
 
 interface CameraModalProps {
   visible: boolean;

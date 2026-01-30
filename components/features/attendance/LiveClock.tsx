@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Text, View } from 'react-native';
-import dayjs from 'dayjs';
+import React, { useState, useEffect } from "react";
+import { View } from "react-native";
+import { Text } from "@/components/ui/text";
+import dayjs from "dayjs";
 
 export const LiveClock = () => {
   const [time, setTime] = useState(dayjs());
@@ -15,11 +16,11 @@ export const LiveClock = () => {
 
   return (
     <View className="items-center justify-center py-4">
-      <Text className="text-4xl font-bold text-gray-800">
-        {time.format('HH:mm:ss')}
+      <Text className="text-4xl font-bold text-foreground">
+        {time.format("HH:mm:ss")}
       </Text>
-      <Text className="text-sm text-gray-500">
-        {time.format('dddd, D MMMM YYYY')}
+      <Text className="text-sm text-muted-foreground">
+        {time.format("dddd, D MMMM YYYY")}
       </Text>
     </View>
   );

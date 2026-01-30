@@ -1,242 +1,113 @@
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  RefreshControl,
-} from "react-native";
+import React from "react";
+import { View, ScrollView, RefreshControl } from "react-native";
+import { Text } from "@/components/ui/text";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocation, useDistance } from "@/hooks/useAttendance";
-import { LiveClock } from "@/components/features/attendance/LiveClock";
-import { LocationMap } from "@/components/features/attendance/LocationMap";
-import { StatusCard } from "@/components/features/attendance/StatusCard";
-import { CameraModal } from "@/components/features/attendance/CameraModal";
-import {
-  getTodayStatus,
-  clockIn,
-  clockOut,
-  AttendanceStatus,
-} from "@/services/attendance";
-import { MapPin, Camera } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useAuthStore } from "@/store/useAuthStore";
+import { ServiceGrid } from "@/components/features/home/ServiceGrid";
+import {
+  AnnouncementCard,
+  Announcement,
+} from "@/components/features/home/AnnouncementCard";
+import { MoreServicesSheet } from "@/components/features/home/MoreServicesSheet";
+import { Megaphone } from "lucide-react-native";
+import "@/lib/icons";
+import { getGreeting } from "@/lib/utils";
 
-const OFFICE_LOCATION = {
-  latitude: -6.175392,
-  longitude: 106.827153,
-  radiusMeters: 200,
-};
+const ANNOUNCEMENTS: Announcement[] = [
+  {
+    id: "1",
+    type: "info",
+    title: "Libur Natal & Tahun Baru 2025",
+    date: "2024-12-20",
+    preview:
+      "Kantor akan tutup pada tanggal 25 Desember 2024 dan 1 Januari 2025. Selamat berlibur!",
+  },
+  {
+    id: "2",
+    type: "warning",
+    title: "Maintenance System HRIS",
+    date: "2024-12-18",
+    preview:
+      "Akan ada maintenance pada sistem HRIS pada tanggal 22 Desember 2024 pukul 22:00 - 02:00 WIB.",
+  },
+  {
+    id: "3",
+    type: "info",
+    title: "Update Kebijakan Cuti 2025",
+    date: "2024-12-15",
+    preview:
+      "Kebijakan cuti tahunan akan diperbarui mulai Januari 2025. Silakan cek email untuk detail.",
+  },
+];
 
-export default function DashboardScreen() {
+export default function HomeScreen() {
   const { user } = useAuthStore();
-  const { location, errorMsg, requestPermissions } = useLocation();
-  const distance = useDistance(
-    location?.latitude,
-    location?.longitude,
-    OFFICE_LOCATION.latitude,
-    OFFICE_LOCATION.longitude,
-  );
+  const [refreshing, setRefreshing] = React.useState(false);
 
-  const [status, setStatus] = useState<AttendanceStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [cameraVisible, setCameraVisible] = useState(false);
-
-  const fetchStatus = useCallback(async () => {
-    try {
-      const data = await getTodayStatus();
-      setStatus(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
-  useEffect(() => {
-    fetchStatus();
-    requestPermissions();
-  }, [fetchStatus, requestPermissions]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchStatus();
-    requestPermissions();
-  }, [fetchStatus, requestPermissions]);
-
-  const handleClockAction = () => {
-    if (!location) {
-      Alert.alert(
-        "Location needed",
-        "Please wait for location to be detected.",
-      );
-      return;
-    }
-
-    if (distance === null || distance > OFFICE_LOCATION.radiusMeters) {
-      Alert.alert(
-        "Out of Range",
-        `You are ${Math.round(distance || 0)}m away from office. Must be within ${OFFICE_LOCATION.radiusMeters}m.`,
-      );
-      return;
-    }
-
-    setCameraVisible(true);
-  };
-
-  const handleCapture = async (photoBase64: string) => {
-    setCameraVisible(false);
-    setLoading(true);
-
-    try {
-      if (!location) return;
-
-      if (status?.clockedIn) {
-        await clockOut({
-          latitude: location.latitude,
-          longitude: location.longitude,
-          photo: photoBase64,
-        });
-        Alert.alert("Success", "Clocked Out Successfully!");
-      } else {
-        await clockIn({
-          latitude: location.latitude,
-          longitude: location.longitude,
-          photo: photoBase64,
-        });
-        Alert.alert("Success", "Clocked In Successfully!");
-      }
-      await fetchStatus();
-    } catch {
-      Alert.alert("Error", "Failed to submit attendance.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const isWithinRange =
-    distance !== null && distance <= OFFICE_LOCATION.radiusMeters;
-
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <ScrollView
-        contentContainerClassName="p-5 pb-24"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View className="flex-row justify-between items-center mb-6">
-          <View>
-            <Text className="text-xl font-semibold text-foreground tracking-tight">
-              Good morning, {user?.name?.split(" ")[0] || "User"}
-            </Text>
-            <Text className="text-sm text-muted-foreground">
-              Ready to work today?
-            </Text>
-          </View>
-          <View className="w-10 h-10 rounded-full bg-secondary items-center justify-center border border-border">
-            <Text className="text-foreground text-sm font-medium">
-              {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-            </Text>
-          </View>
-        </View>
+    <View className="flex-1 bg-background">
+      <LinearGradient
+        colors={["#3b82f6", "#60a5fa", "#93c5fd"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="absolute top-0 left-0 right-0 h-56"
+      />
 
-        <LiveClock />
-
-        {status && (
-          <StatusCard
-            clockedIn={status.clockedIn}
-            shiftStart={status.shiftStart}
-            shiftEnd={status.shiftEnd}
-            lastClockIn={status.lastClockIn}
-            lastClockOut={status.lastClockOut}
-          />
-        )}
-
-        <View className="mt-6">
-          <View className="flex-row items-center mb-3 justify-between">
-            <View className="flex-row items-center gap-2">
-              <MapPin
-                size={16}
-                className="text-muted-foreground"
-                color="#a1a1aa"
-              />
-              <Text className="text-sm font-medium text-foreground">
-                Location
-              </Text>
-            </View>
-            {distance !== null && (
-              <View
-                className={`px-2 py-0.5 rounded-md border ${
-                  isWithinRange
-                    ? "bg-green-500/10 border-green-500/20"
-                    : "bg-red-500/10 border-red-500/20"
-                }`}
-              >
-                <Text
-                  className={`text-xs font-medium ${
-                    isWithinRange
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400"
-                  }`}
-                >
-                  {Math.round(distance)}m away
+      <SafeAreaView className="flex-1">
+        <ScrollView
+          contentContainerClassName="pb-10"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <View className="px-5 pt-2 pb-8">
+            <View className="flex-row justify-between items-center">
+              <View>
+                <Text className="text-xl font-semibold text-white tracking-tight">
+                  {getGreeting()}, {user?.name?.split(" ")[0] || "User"}
+                </Text>
+                <Text className="text-sm text-white/80">
+                  Mau ngapain hari ini?
                 </Text>
               </View>
-            )}
+              <View className="w-10 h-10 rounded-full bg-white/20 items-center justify-center border border-white/30">
+                <Text className="text-white text-sm font-medium">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                </Text>
+              </View>
+            </View>
           </View>
-          <LocationMap
-            officeLatitude={OFFICE_LOCATION.latitude}
-            officeLongitude={OFFICE_LOCATION.longitude}
-            allowedRadius={OFFICE_LOCATION.radiusMeters}
-          />
-          {errorMsg && (
-            <Text className="text-destructive text-xs mt-2">{errorMsg}</Text>
-          )}
-        </View>
-      </ScrollView>
 
-      <View className="absolute bottom-0 left-0 right-0 bg-background/80 p-5 border-t border-border items-center backdrop-blur-md">
-        <TouchableOpacity
-          className={`w-full h-12 rounded-lg flex-row justify-center items-center border ${
-            !isWithinRange || loading || !location
-              ? "bg-muted border-transparent"
-              : status?.clockedIn
-                ? "bg-destructive border-transparent"
-                : "bg-primary border-transparent"
-          }`}
-          onPress={handleClockAction}
-          disabled={!isWithinRange || loading || !location}
-        >
-          <Camera
-            size={20}
-            color={!isWithinRange || loading || !location ? "#a1a1aa" : "white"}
-            className="mr-2"
-          />
-          <Text
-            className={`text-base font-medium ${!isWithinRange || loading || !location ? "text-muted-foreground" : "text-primary-foreground"}`}
-          >
-            {loading
-              ? "Processing..."
-              : status?.clockedIn
-                ? "Clock Out"
-                : "Clock In"}
-          </Text>
-        </TouchableOpacity>
-        {!isWithinRange && location && (
-          <Text className="mt-3 text-destructive text-xs font-medium">
-            You must be at the office to clock in/out.
-          </Text>
-        )}
-      </View>
+          <View className="px-4 -mt-2">
+            <ServiceGrid />
 
-      <CameraModal
-        visible={cameraVisible}
-        onClose={() => setCameraVisible(false)}
-        onCapture={handleCapture}
-      />
-    </SafeAreaView>
+            <View className="mt-6">
+              <View className="flex-row items-center gap-2 mb-3">
+                <Megaphone size={16} className="text-muted-foreground" />
+                <Text className="text-sm font-medium text-foreground">
+                  Pengumuman
+                </Text>
+              </View>
+
+              <View className="gap-3">
+                {ANNOUNCEMENTS.map((announcement) => (
+                  <AnnouncementCard
+                    key={announcement.id}
+                    announcement={announcement}
+                  />
+                ))}
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+      <MoreServicesSheet />
+    </View>
   );
 }

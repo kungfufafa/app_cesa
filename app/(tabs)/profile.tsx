@@ -8,9 +8,34 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ChevronRight } from "lucide-react-native";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { useAuthBottomSheet } from "@/store/useAuthBottomSheet";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuthStore();
+  const { isAuthenticated } = useRequireAuth();
+  const openSheet = useAuthBottomSheet((s) => s.open);
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView className="flex-1 bg-background">
+        <View className="flex-1 justify-center items-center px-6">
+          <View className="w-20 h-20 rounded-full bg-secondary items-center justify-center mb-4 border border-border">
+            <IconSymbol name="person.fill" size={32} color="#71717a" />
+          </View>
+          <Text variant="h3" className="mb-2">
+            Guest
+          </Text>
+          <Text variant="muted" className="text-center mb-6">
+            Login untuk melihat profil dan pengaturan
+          </Text>
+          <Button onPress={() => openSheet()}>
+            <Text className="text-primary-foreground">Login</Text>
+          </Button>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [

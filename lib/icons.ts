@@ -9,6 +9,23 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  SwitchCamera,
+  X,
+  Calendar,
+  Plus,
+  Briefcase,
+  FileText,
+  RefreshCw,
+  Users,
+  Inbox,
+  Ban,
+  ShoppingCart,
+  Headphones,
+  Target,
+  Package,
+  Megaphone,
+  MoreHorizontal,
+  ArrowLeftRight,
 } from "lucide-react-native";
 
 /**
@@ -37,3 +54,20 @@ interopIcon(User);
 interopIcon(Settings);
 interopIcon(HelpCircle);
 interopIcon(LogOut);
+interopIcon(SwitchCamera);
+interopIcon(X);
+interopIcon(Calendar);
+interopIcon(Plus);
+interopIcon(Briefcase);
+interopIcon(FileText);
+interopIcon(RefreshCw);
+interopIcon(Users);
+interopIcon(Inbox);
+interopIcon(Ban);
+interopIcon(ShoppingCart);
+interopIcon(Headphones);
+interopIcon(Target);
+interopIcon(Package);
+interopIcon(Megaphone);
+interopIcon(MoreHorizontal);
+interopIcon(ArrowLeftRight);

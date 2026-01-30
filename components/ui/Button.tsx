@@ -7,7 +7,7 @@ import { Platform, Pressable, View } from 'react-native';
 
 const buttonVariants = cva(
   cn(
-    'group relative shrink-0 flex-row items-center justify-center gap-2 rounded-md shadow-none overflow-hidden',
+    'group relative shrink-0 flex-row items-center justify-center gap-2 rounded-lg shadow-none overflow-hidden',
     Platform.select({
       web: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap outline-none transition-all focus-visible:ring-[3px] disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
     })
@@ -16,8 +16,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: cn(
-          'bg-transparent shadow-md shadow-black/20 active:opacity-90',
-          Platform.select({ web: 'hover:opacity-95' })
+          'bg-transparent shadow-none active:opacity-90',
+          Platform.select({ web: 'hover:overlay-0 hover:contrast-125 transition-[filter]' })
         ),
         destructive: cn(
           'bg-destructive active:bg-destructive/90 dark:bg-destructive/60 shadow-sm shadow-black/5',
@@ -57,7 +57,7 @@ const buttonVariants = cva(
 
 const buttonTextVariants = cva(
   cn(
-    'text-foreground text-sm font-medium',
+    'text-foreground text-sm font-bold',
     Platform.select({ web: 'pointer-events-none transition-colors' })
   ),
   {
@@ -90,9 +90,9 @@ const buttonTextVariants = cva(
   }
 );
 
-const PRIMARY_GRADIENT = ['#5A93FF', '#2F6BFF'];
-const PRIMARY_GRADIENT_LOCATIONS = [0, 1];
-const PRIMARY_HIGHLIGHT = ['rgba(255,255,255,0.45)', 'rgba(255,255,255,0)'];
+export const PRIMARY_GRADIENT = ['#60A5FA', '#2563EB'] as const;
+export const PRIMARY_GRADIENT_LOCATIONS = [0, 1] as const;
+
 cssInterop(LinearGradient, {
   className: {
     target: 'style',
@@ -121,13 +121,7 @@ function Button({ className, variant, size, children, ...props }: ButtonProps) {
                   locations={PRIMARY_GRADIENT_LOCATIONS}
                   start={{ x: 0.5, y: 0 }}
                   end={{ x: 0.5, y: 1 }}
-                  className="absolute inset-0 rounded-[0.65rem]"
-                />
-                <LinearGradient
-                  colors={PRIMARY_HIGHLIGHT}
-                  start={{ x: 0.5, y: 0 }}
-                  end={{ x: 0.5, y: 1 }}
-                  className="absolute inset-x-0 top-0 h-[45%] rounded-t-[0.65rem]"
+                  className="absolute inset-0 rounded-lg"
                 />
               </View>
             )}
@@ -141,3 +135,4 @@ function Button({ className, variant, size, children, ...props }: ButtonProps) {
 
 export { Button, buttonTextVariants, buttonVariants };
 export type { ButtonProps };
+

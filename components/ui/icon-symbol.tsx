@@ -24,6 +24,8 @@ const MAPPING = {
   gear: "settings",
   "questionmark.circle": "help-outline",
   "rectangle.portrait.and.arrow.right": "logout",
+  "person.2.fill": "groups",
+  "tray.fill": "inbox",
 } as IconMapping;
 
 /**
