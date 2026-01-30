@@ -68,3 +68,60 @@ export const clockOut = async (data: { latitude: number; longitude: number; phot
     photoBase64: data.photo,
   };
 };
+
+export interface AttendanceLog {
+  id: string;
+  date: string; // ISO string for the date part
+  clockIn?: string; // ISO string
+  clockOut?: string; // ISO string
+  status: 'on-time' | 'late' | 'absent';
+}
+
+export const getHistory = async (month: number, year: number): Promise<AttendanceLog[]> => {
+  await new Promise((resolve) => setTimeout(resolve, 800));
+
+  // Generate 10 dummy records
+  const history: AttendanceLog[] = [];
+  const today = new Date();
+  
+  for (let i = 0; i < 10; i++) {
+    const date = new Date(year, month, today.getDate() - i);
+    const dateStr = date.toISOString();
+    
+    // Skip weekends for realism
+    if (date.getDay() === 0 || date.getDay() === 6) continue;
+
+    const isLate = Math.random() > 0.8;
+    const isAbsent = Math.random() > 0.95;
+
+    let status: 'on-time' | 'late' | 'absent' = 'on-time';
+    if (isAbsent) status = 'absent';
+    else if (isLate) status = 'late';
+
+    let clockIn = undefined;
+    let clockOut = undefined;
+
+    if (!isAbsent) {
+      // 09:00 +/- random minutes
+      const clockInTime = new Date(date);
+      clockInTime.setHours(9, Math.floor(Math.random() * 30), 0);
+      if (isLate) clockInTime.setMinutes(Math.floor(Math.random() * 30) + 31); // > 9:30
+      clockIn = clockInTime.toISOString();
+
+      // 17:00 +/- random minutes
+      const clockOutTime = new Date(date);
+      clockOutTime.setHours(17, Math.floor(Math.random() * 60), 0);
+      clockOut = clockOutTime.toISOString();
+    }
+
+    history.push({
+      id: `log-${i}`,
+      date: dateStr,
+      clockIn,
+      clockOut,
+      status,
+    });
+  }
+
+  return history;
+};
