@@ -38,6 +38,21 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Cesa to access your location to verify attendance.",
+          "locationAlwaysPermission": "Allow Cesa to access your location to verify attendance.",
+          "locationWhenInUsePermission": "Allow Cesa to access your location to verify attendance."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Cesa to access your camera to take attendance photos."
+        }
       ]
     ],
     "experiments": {

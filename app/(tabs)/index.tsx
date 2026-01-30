@@ -1,98 +1,291 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, SafeAreaView } from 'react-native';
+import { useLocation, useDistance } from '@/hooks/useAttendance';
+import { LiveClock } from '@/components/features/attendance/LiveClock';
+import { LocationMap } from '@/components/features/attendance/LocationMap';
+import { StatusCard } from '@/components/features/attendance/StatusCard';
+import { CameraModal } from '@/components/features/attendance/CameraModal';
+import { getTodayStatus, clockIn, clockOut, AttendanceStatus } from '@/services/attendance';
+import { MapPin, Camera } from 'lucide-react-native';
+import { useAuthStore } from '@/store/useAuthStore';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const OFFICE_LOCATION = {
+  latitude: -6.175392,
+  longitude: 106.827153,
+  radiusMeters: 200,
+};
 
-export default function HomeScreen() {
+export default function DashboardScreen() {
+  const { user } = useAuthStore();
+  const { location, errorMsg, requestPermissions } = useLocation();
+  const distance = useDistance(
+    location?.latitude,
+    location?.longitude,
+    OFFICE_LOCATION.latitude,
+    OFFICE_LOCATION.longitude
+  );
+
+  const [status, setStatus] = useState<AttendanceStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [cameraVisible, setCameraVisible] = useState(false);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const data = await getTodayStatus();
+      setStatus(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStatus();
+    requestPermissions();
+  }, [fetchStatus, requestPermissions]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchStatus();
+    requestPermissions();
+  }, [fetchStatus, requestPermissions]);
+
+  const handleClockAction = () => {
+    if (!location) {
+        Alert.alert("Location needed", "Please wait for location to be detected.");
+        return;
+    }
+    
+    if (distance === null || distance > OFFICE_LOCATION.radiusMeters) {
+        Alert.alert("Out of Range", `You are ${Math.round(distance || 0)}m away from office. Must be within ${OFFICE_LOCATION.radiusMeters}m.`);
+        return;
+    }
+
+    setCameraVisible(true);
+  };
+
+  const handleCapture = async (photoBase64: string) => {
+    setCameraVisible(false);
+    setLoading(true);
+
+    try {
+        if (!location) return;
+
+        if (status?.clockedIn) {
+            await clockOut({
+                latitude: location.latitude,
+                longitude: location.longitude,
+                photo: photoBase64
+            });
+            Alert.alert("Success", "Clocked Out Successfully!");
+        } else {
+             await clockIn({
+                latitude: location.latitude,
+                longitude: location.longitude,
+                photo: photoBase64
+            });
+            Alert.alert("Success", "Clocked In Successfully!");
+        }
+        await fetchStatus();
+    } catch {
+        Alert.alert("Error", "Failed to submit attendance.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const isWithinRange = distance !== null && distance <= OFFICE_LOCATION.radiusMeters;
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        <View style={styles.header}>
+            <View>
+                <Text style={styles.greeting}>Hello, {user?.name || 'User'}</Text>
+                <Text style={styles.subGreeting}>Let&apos;s get to work!</Text>
+            </View>
+            <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{user?.name ? user.name.charAt(0).toUpperCase() : 'U'}</Text>
+            </View>
+        </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <LiveClock />
+
+        {status && (
+            <StatusCard 
+                clockedIn={status.clockedIn}
+                shiftStart={status.shiftStart}
+                shiftEnd={status.shiftEnd}
+                lastClockIn={status.lastClockIn}
+                lastClockOut={status.lastClockOut}
+            />
+        )}
+
+        <View style={styles.mapContainer}>
+             <View style={styles.locationHeader}>
+                <MapPin size={18} color="#4b5563" />
+                <Text style={styles.locationTitle}>Current Location</Text>
+                {distance !== null && (
+                    <Text style={[styles.distanceBadge, isWithinRange ? styles.textGreen : styles.textRed]}>
+                        {Math.round(distance)}m away
+                    </Text>
+                )}
+            </View>
+            <LocationMap 
+                userLatitude={location?.latitude}
+                userLongitude={location?.longitude}
+                officeLatitude={OFFICE_LOCATION.latitude}
+                officeLongitude={OFFICE_LOCATION.longitude}
+                allowedRadius={OFFICE_LOCATION.radiusMeters}
+            />
+             {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
+        </View>
+
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <TouchableOpacity 
+            style={[
+                styles.actionButton, 
+                status?.clockedIn ? styles.buttonOut : styles.buttonIn,
+                (!isWithinRange || loading || !location) && styles.buttonDisabled
+            ]}
+            onPress={handleClockAction}
+            disabled={!isWithinRange || loading || !location}
+        >
+            <Camera size={24} color="white" style={{ marginRight: 8 }} />
+            <Text style={styles.buttonText}>
+                {loading ? 'Processing...' : status?.clockedIn ? 'Clock Out' : 'Clock In'}
+            </Text>
+        </TouchableOpacity>
+         {!isWithinRange && location && (
+            <Text style={styles.warningText}>You must be at the office to clock in/out.</Text>
+        )}
+      </View>
+
+      <CameraModal 
+        visible={cameraVisible}
+        onClose={() => setCameraVisible(false)}
+        onCapture={handleCapture}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 100,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  greeting: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  subGreeting: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  mapContainer: {
+    marginTop: 10,
+  },
+  locationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
     marginBottom: 8,
+    gap: 6,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
+  locationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  distanceBadge: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 'auto',
+  },
+  textGreen: {
+    color: '#16a34a',
+  },
+  textRed: {
+    color: '#dc2626',
+  },
+  footer: {
+    position: 'absolute',
     bottom: 0,
     left: 0,
-    position: 'absolute',
+    right: 0,
+    backgroundColor: 'white',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    alignItems: 'center',
   },
+  actionButton: {
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  buttonIn: {
+    backgroundColor: '#2563eb',
+  },
+  buttonOut: {
+    backgroundColor: '#dc2626',
+  },
+  buttonDisabled: {
+    backgroundColor: '#9ca3af',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  warningText: {
+    marginTop: 8,
+    color: '#dc2626',
+    fontSize: 12,
+  },
+  errorText: {
+      color: 'red',
+      fontSize: 12,
+      marginTop: 4,
+  }
 });
