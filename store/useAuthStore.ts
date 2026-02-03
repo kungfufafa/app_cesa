@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import { setAuthToken } from '../services/api';
 import { login, LoginCredentials, AuthResponse } from '../services/auth';
 
 interface AuthState {
@@ -21,6 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const response = await login(credentials);
       await SecureStore.setItemAsync('token', response.token);
+      setAuthToken(response.token);
       set({ 
         token: response.token, 
         user: response.user, 
@@ -34,18 +36,22 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   signOut: async () => {
     await SecureStore.deleteItemAsync('token');
+    setAuthToken(null);
     set({ token: null, user: null, isAuthenticated: false });
   },
   restoreSession: async () => {
     try {
       const token = await SecureStore.getItemAsync('token');
       if (token) {
+        setAuthToken(token);
         set({ token, isAuthenticated: true, isLoading: false });
       } else {
+        setAuthToken(null);
         set({ token: null, isAuthenticated: false, isLoading: false });
       }
     } catch (e) {
       console.error('Failed to restore token', e);
+      setAuthToken(null);
       set({ token: null, isAuthenticated: false, isLoading: false });
     }
   },

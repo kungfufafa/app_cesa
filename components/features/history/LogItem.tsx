@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { Text } from '@/components/ui/text';
+import { View } from 'react-native';
 import { AttendanceLog } from '@/services/attendance';
 import dayjs from 'dayjs';
 import { clsx } from 'clsx';

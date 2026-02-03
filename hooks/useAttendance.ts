@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as Location from 'expo-location';
 
 export interface LocationData {
@@ -7,78 +7,127 @@ export interface LocationData {
   accuracy: number | null;
 }
 
-export const useLocation = () => {
+interface UseLocationOptions {
+  enableWatch?: boolean;
+  watchAccuracy?: Location.Accuracy;
+  watchIntervalMs?: number;
+  watchDistanceM?: number;
+}
+
+export const useLocation = (options: UseLocationOptions = {}) => {
+  const {
+    enableWatch = false,
+    watchAccuracy = Location.Accuracy.Balanced,
+    watchIntervalMs = 5000,
+    watchDistanceM = 10,
+  } = options;
+
   const [location, setLocation] = useState<LocationData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const subscriptionRef = useRef<Location.LocationSubscription | null>(null);
 
   const requestPermissions = useCallback(async () => {
     try {
       setLoading(true);
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setErrorMsg('Permission to access location was denied');
         setLoading(false);
         return false;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
+      setErrorMsg(null);
+      const current = await Location.getCurrentPositionAsync({
+        accuracy: watchAccuracy,
+      });
       setLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        accuracy: location.coords.accuracy,
+        latitude: current.coords.latitude,
+        longitude: current.coords.longitude,
+        accuracy: current.coords.accuracy,
       });
       setLoading(false);
       return true;
-    } catch (error) {
-        setErrorMsg('Error fetching location');
+    } catch {
+      setErrorMsg('Error fetching location');
+      setLoading(false);
+      return false;
+    }
+  }, [watchAccuracy]);
+
+  const startWatching = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
         setLoading(false);
         return false;
+      }
+
+      if (subscriptionRef.current) {
+        setLoading(false);
+        return true;
+      }
+
+      setErrorMsg(null);
+      subscriptionRef.current = await Location.watchPositionAsync(
+        {
+          accuracy: watchAccuracy,
+          timeInterval: watchIntervalMs,
+          distanceInterval: watchDistanceM,
+        },
+        (newLocation) => {
+          setLocation({
+            latitude: newLocation.coords.latitude,
+            longitude: newLocation.coords.longitude,
+            accuracy: newLocation.coords.accuracy,
+          });
+          setLoading(false);
+        }
+      );
+      return true;
+    } catch {
+      setErrorMsg('Error fetching location');
+      setLoading(false);
+      return false;
+    }
+  }, [watchAccuracy, watchDistanceM, watchIntervalMs]);
+
+  const stopWatching = useCallback(() => {
+    if (subscriptionRef.current) {
+      subscriptionRef.current.remove();
+      subscriptionRef.current = null;
     }
   }, []);
 
-    // Watch position
-    useEffect(() => {
-        let subscription: Location.LocationSubscription | null = null;
+  useEffect(() => {
+    if (enableWatch) {
+      startWatching();
+      return () => stopWatching();
+    }
+    return undefined;
+  }, [enableWatch, startWatching, stopWatching]);
 
-        const startWatching = async () => {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status === 'granted') {
-                subscription = await Location.watchPositionAsync(
-                    {
-                        accuracy: Location.Accuracy.High,
-                        timeInterval: 5000,
-                        distanceInterval: 10,
-                    },
-                    (newLocation) => {
-                         setLocation({
-                            latitude: newLocation.coords.latitude,
-                            longitude: newLocation.coords.longitude,
-                            accuracy: newLocation.coords.accuracy,
-                        });
-                        setLoading(false);
-                    }
-                );
-            } else {
-                setLoading(false);
-            }
-        };
-        
-        startWatching();
+  useEffect(() => () => stopWatching(), [stopWatching]);
 
-        return () => {
-            if (subscription) {
-                subscription.remove();
-            }
-        };
-    }, []);
-
-
-  return { location, errorMsg, loading, requestPermissions };
+  return {
+    location,
+    errorMsg,
+    loading,
+    requestPermissions,
+    startWatching,
+    stopWatching,
+  };
 };
 
 // Haversine formula
-export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+export const calculateDistance = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+) => {
   const R = 6371e3; // metres
   const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
   const φ2 = (lat2 * Math.PI) / 180;
@@ -94,17 +143,22 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
   return d;
 };
 
-export const useDistance = (userLat: number | undefined, userLon: number | undefined, targetLat: number, targetLon: number) => {
-    const [distance, setDistance] = useState<number | null>(null);
+export const useDistance = (
+  userLat: number | undefined,
+  userLon: number | undefined,
+  targetLat: number,
+  targetLon: number
+) => {
+  const [distance, setDistance] = useState<number | null>(null);
 
-    useEffect(() => {
-        if (userLat !== undefined && userLon !== undefined) {
-            const d = calculateDistance(userLat, userLon, targetLat, targetLon);
-            setDistance(d);
-        } else {
-            setDistance(null);
-        }
-    }, [userLat, userLon, targetLat, targetLon]);
+  useEffect(() => {
+    if (userLat !== undefined && userLon !== undefined) {
+      const d = calculateDistance(userLat, userLon, targetLat, targetLon);
+      setDistance(d);
+    } else {
+      setDistance(null);
+    }
+  }, [userLat, userLon, targetLat, targetLon]);
 
-    return distance;
+  return distance;
 };

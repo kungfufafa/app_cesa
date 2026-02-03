@@ -7,13 +7,15 @@ import { Text } from "@/components/ui/text";
 interface CameraModalProps {
   visible: boolean;
   onClose: () => void;
-  onCapture: (base64: string) => void;
+  onCapture: (photo: { uri: string; base64?: string }) => void;
+  returnBase64?: boolean;
 }
 
 export const CameraModal = ({
   visible,
   onClose,
   onCapture,
+  returnBase64 = false,
 }: CameraModalProps) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<"front" | "back">("front");
@@ -58,11 +60,11 @@ export const CameraModal = ({
       try {
         const photo = await cameraRef.current.takePictureAsync({
           quality: 0.5,
-          base64: true,
+          base64: returnBase64,
           skipProcessing: true,
         });
-        if (photo?.base64) {
-          onCapture(photo.base64);
+        if (photo?.uri) {
+          onCapture({ uri: photo.uri, base64: photo.base64 });
         }
       } catch (e) {
         console.error(e);

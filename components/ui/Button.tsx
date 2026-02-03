@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { LinearGradient } from 'expo-linear-gradient';
 import { cssInterop } from 'nativewind';
+import type * as React from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
 const buttonVariants = cva(
@@ -135,4 +136,3 @@ function Button({ className, variant, size, children, ...props }: ButtonProps) {
 
 export { Button, buttonTextVariants, buttonVariants };
 export type { ButtonProps };
-

@@ -2,7 +2,7 @@ import React from "react";
 import { View, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { Text } from "@/components/ui/text";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +12,8 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useAuthBottomSheet } from "@/store/useAuthBottomSheet";
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const signOut = useAuthStore((s) => s.signOut);
   const { isAuthenticated } = useRequireAuth();
   const openSheet = useAuthBottomSheet((s) => s.open);
 

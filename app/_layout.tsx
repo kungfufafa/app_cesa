@@ -43,7 +43,8 @@ const queryClient = new QueryClient({
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { isLoading, restoreSession } = useAuthStore();
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const restoreSession = useAuthStore((s) => s.restoreSession);
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,

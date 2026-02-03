@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ScrollView, RefreshControl } from "react-native";
+import { View, FlatList, RefreshControl } from "react-native";
 import { Text } from "@/components/ui/text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -42,13 +42,22 @@ const ANNOUNCEMENTS: Announcement[] = [
 ];
 
 export default function HomeScreen() {
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
+
+  const renderAnnouncement = React.useCallback(
+    ({ item }: { item: Announcement }) => (
+      <View className="px-4">
+        <AnnouncementCard announcement={item} />
+      </View>
+    ),
+    []
+  );
 
   return (
     <View className="flex-1 bg-background">
@@ -60,52 +69,50 @@ export default function HomeScreen() {
       />
 
       <SafeAreaView className="flex-1">
-        <ScrollView
+        <FlatList
+          data={ANNOUNCEMENTS}
+          keyExtractor={(item) => item.id}
+          renderItem={renderAnnouncement}
+          ItemSeparatorComponent={() => <View className="h-3" />}
           contentContainerClassName="pb-10"
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-        >
-          <View className="px-5 pt-2 pb-8">
-            <View className="flex-row justify-between items-center">
-              <View>
-                <Text className="text-xl font-semibold text-white tracking-tight">
-                  {getGreeting()}, {user?.name?.split(" ")[0] || "User"}
-                </Text>
-                <Text className="text-sm text-white/80">
-                  Mau ngapain hari ini?
-                </Text>
-              </View>
-              <View className="w-10 h-10 rounded-full bg-white/20 items-center justify-center border border-white/30">
-                <Text className="text-white text-sm font-medium">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View className="px-4 -mt-2">
-            <ServiceGrid />
-
-            <View className="mt-6">
-              <View className="flex-row items-center gap-2 mb-3">
-                <Megaphone size={16} className="text-muted-foreground" />
-                <Text className="text-sm font-medium text-foreground">
-                  Pengumuman
-                </Text>
+          ListHeaderComponent={
+            <>
+              <View className="px-5 pt-2 pb-8">
+                <View className="flex-row justify-between items-center">
+                  <View>
+                    <Text className="text-xl font-semibold text-white tracking-tight">
+                      {getGreeting()}, {user?.name?.split(" ")[0] || "User"}
+                    </Text>
+                    <Text className="text-sm text-white/80">
+                      Mau ngapain hari ini?
+                    </Text>
+                  </View>
+                  <View className="w-10 h-10 rounded-full bg-white/20 items-center justify-center border border-white/30">
+                    <Text className="text-white text-sm font-medium">
+                      {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                    </Text>
+                  </View>
+                </View>
               </View>
 
-              <View className="gap-3">
-                {ANNOUNCEMENTS.map((announcement) => (
-                  <AnnouncementCard
-                    key={announcement.id}
-                    announcement={announcement}
-                  />
-                ))}
+              <View className="px-4 -mt-2">
+                <ServiceGrid />
+
+                <View className="mt-6">
+                  <View className="flex-row items-center gap-2 mb-3">
+                    <Megaphone size={16} className="text-muted-foreground" />
+                    <Text className="text-sm font-medium text-foreground">
+                      Pengumuman
+                    </Text>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
-        </ScrollView>
+            </>
+          }
+        />
       </SafeAreaView>
       <MoreServicesSheet />
     </View>

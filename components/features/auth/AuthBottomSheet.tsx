@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/label";
 import { Text } from "@/components/ui/text";
 import { Colors } from "@/constants/theme";

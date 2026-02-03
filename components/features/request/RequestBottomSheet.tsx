@@ -7,13 +7,29 @@ import {
   BottomSheetModal,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import { useRouter } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
-import { Briefcase, FileText, LogOut, RefreshCw } from "lucide-react-native";
+import {
+  Briefcase,
+  FileText,
+  LogOut,
+  RefreshCw,
+  type LucideIcon,
+} from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
-import { TouchableOpacity, View } from "react-native";
+import { Alert, TouchableOpacity, View } from "react-native";
 
-const MENU_ITEMS = [
+type MenuItem = {
+  id: string;
+  title: string;
+  icon: LucideIcon;
+  description: string;
+  color: string;
+  url?: string;
+  route?: Href;
+};
+
+const MENU_ITEMS: MenuItem[] = [
   {
     id: "exit-clearance",
     title: "Exit Clearance",
@@ -64,15 +80,15 @@ export function RequestBottomSheet() {
     close();
   };
 
-  const handleMenuPress = (item: (typeof MENU_ITEMS)[number]) => {
+  const handleMenuPress = (item: MenuItem) => {
     if (item.url) {
       Linking.openURL(item.url);
       close();
     } else if (item.route) {
-      router.push(item.route as any);
+      router.push(item.route);
       close();
     } else {
-      console.log("Selected:", item.title);
+      Alert.alert("Coming Soon", `${item.title} belum tersedia.`);
     }
   };
 

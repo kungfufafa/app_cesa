@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ScrollView, TouchableOpacity } from "react-native";
+import { View, FlatList, TouchableOpacity } from "react-native";
 import { Text } from "@/components/ui/text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
@@ -89,10 +89,13 @@ export default function FormTransferScreen() {
         }}
       />
 
-      <ScrollView contentContainerClassName="p-4 gap-3">
-        {FORM_LINKS.map((item) => (
+      <FlatList
+        data={FORM_LINKS}
+        keyExtractor={(item) => item.id}
+        contentContainerClassName="p-4"
+        ItemSeparatorComponent={() => <View className="h-3" />}
+        renderItem={({ item }) => (
           <TouchableOpacity
-            key={item.id}
             className="flex-row items-center p-4 bg-card rounded-xl border border-border active:bg-secondary/50"
             activeOpacity={0.7}
             onPress={() => handlePress(item.url)}
@@ -113,8 +116,8 @@ export default function FormTransferScreen() {
             </View>
             <ChevronRight size={20} className="text-muted-foreground" />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        )}
+      />
     </SafeAreaView>
   );
 }

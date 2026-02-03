@@ -3,6 +3,12 @@ import * as SecureStore from 'expo-secure-store';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.example.com';
 
+let authToken: string | null | undefined = undefined;
+
+export const setAuthToken = (token: string | null) => {
+  authToken = token;
+};
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -11,8 +17,12 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('token');
+  if (authToken === undefined) {
+    authToken = await SecureStore.getItemAsync('token');
+  }
+  const token = authToken;
   if (token) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
