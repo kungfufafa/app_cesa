@@ -1,7 +1,9 @@
 import React from "react";
 import { View } from "react-native";
 import { Text } from "@/components/ui/text";
-import { Clock, Calendar } from "lucide-react-native";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface StatusCardProps {
   clockedIn: boolean;
@@ -18,6 +20,9 @@ export const StatusCard = ({
   lastClockIn,
   lastClockOut,
 }: StatusCardProps) => {
+  const colorScheme = useColorScheme();
+  const iconColor = Colors[colorScheme ?? "light"].icon;
+
   return (
     <View className="bg-card rounded-2xl p-4 my-2.5 shadow-sm border border-border">
       <View className="flex-row justify-between items-center mb-4">
@@ -37,7 +42,7 @@ export const StatusCard = ({
 
       <View className="flex-row justify-between">
         <View className="flex-row items-center gap-2">
-          <Calendar size={16} className="text-muted-foreground" />
+          <IconSymbol name="calendar" size={16} color={iconColor} />
           <Text className="text-sm text-muted-foreground">Shift</Text>
           <Text className="text-sm font-medium text-foreground ml-1">
             {shiftStart} - {shiftEnd}
@@ -49,7 +54,7 @@ export const StatusCard = ({
 
       <View className="flex-row justify-between">
         <View className="flex-row items-center gap-2">
-          <Clock size={16} className="text-muted-foreground" />
+          <IconSymbol name="clock.fill" size={16} color={iconColor} />
           <Text className="text-sm text-muted-foreground">Clock In</Text>
           <Text className="text-sm font-medium text-foreground ml-1">
             {lastClockIn
@@ -61,7 +66,7 @@ export const StatusCard = ({
           </Text>
         </View>
         <View className="flex-row items-center gap-2">
-          <Clock size={16} className="text-muted-foreground" />
+          <IconSymbol name="clock.fill" size={16} color={iconColor} />
           <Text className="text-sm text-muted-foreground">Clock Out</Text>
           <Text className="text-sm font-medium text-foreground ml-1">
             {lastClockOut

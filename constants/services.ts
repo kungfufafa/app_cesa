@@ -1,51 +1,51 @@
-import {
-  ArrowLeftRight,
-  Ban,
-  Clock,
-  Headphones,
-  MoreHorizontal,
-  Package,
-  ShoppingCart,
-  Target,
-} from "lucide-react-native";
+import type { IconSymbolName } from "@/components/ui/icon-symbol";
 
-export const SERVICES = [
+export type ServiceItemConfig = {
+  id: string;
+  label: string;
+  iconName: IconSymbolName;
+  image: any;
+  url: string;
+  color: string;
+};
+
+export const SERVICES: ServiceItemConfig[] = [
   {
     id: "dnd",
     label: "DND",
-    icon: Ban,
+    iconName: "nosign",
     image: require("@/assets/images/icons/dnd.png"),
     url: "https://dnd.completeselular.com",
-    color: "#ef4444",
+    color: "#3b82f6",
   },
   {
     id: "sumo",
-    label: "Sumo",
-    icon: ShoppingCart,
+    label: "SUMO",
+    iconName: "cart.fill",
     image: require("@/assets/images/icons/sumo.png"),
     url: "https://sumo.completeselular.com/",
-    color: "#f59e0b",
+    color: "#3b82f6",
   },
   {
     id: "helpdesk",
     label: "Helpdesk",
-    icon: Headphones,
+    iconName: "headphones",
     image: require("@/assets/images/icons/helpdesk.png"),
     url: "https://helpdesk.completeselular.com",
-    color: "#10b981",
+    color: "#3b82f6",
   },
   {
     id: "lead",
-    label: "Lead",
-    icon: Target,
+    label: "LEAD",
+    iconName: "scope",
     image: require("@/assets/images/icons/lead.png"),
     url: "http://lead.completeselular.com/",
-    color: "#8b5cf6",
+    color: "#3b82f6",
   },
   {
     id: "shelf",
     label: "Shelf",
-    icon: Package,
+    iconName: "shippingbox.fill",
     image: require("@/assets/images/icons/shelf.png"),
     url: "https://shelf.completeselular.com/",
     color: "#3b82f6",
@@ -53,25 +53,25 @@ export const SERVICES = [
   {
     id: "attendance",
     label: "Attendance",
-    icon: Clock,
+    iconName: "clock.fill",
     image: require("@/assets/images/icons/attendance.png"),
     url: "https://attendance.completeselular.com/",
-    color: "#06b6d4",
+    color: "#3b82f6",
   },
   {
     id: "form-transfer",
     label: "Form Transfer",
-    icon: ArrowLeftRight,
+    iconName: "arrow.left.arrow.right",
     image: require("@/assets/images/icons/transfer.png"),
     url: "/form-transfer",
-    color: "#ec4899",
+    color: "#3b82f6",
   },
   {
     id: "lainnya",
     label: "Lainnya",
-    icon: MoreHorizontal,
+    iconName: "ellipsis",
     image: require("@/assets/images/icons/more.png"),
     url: "",
-    color: "#6b7280",
+    color: "#3b82f6",
   },
 ];

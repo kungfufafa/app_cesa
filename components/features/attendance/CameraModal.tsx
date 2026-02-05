@@ -1,8 +1,8 @@
 import React, { useState, useRef } from "react";
 import { View, TouchableOpacity, Modal, ActivityIndicator } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { X, SwitchCamera } from "lucide-react-native";
 import { Text } from "@/components/ui/text";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 
 interface CameraModalProps {
   visible: boolean;
@@ -43,7 +43,7 @@ export const CameraModal = ({
             onPress={onClose}
             className="absolute top-10 right-5 p-2.5"
           >
-            <X color="white" size={24} />
+            <IconSymbol name="xmark" size={24} color="white" />
           </TouchableOpacity>
         </View>
       </Modal>
@@ -83,7 +83,7 @@ export const CameraModal = ({
               className="p-3 bg-black/50 rounded-full"
               onPress={onClose}
             >
-              <X color="white" size={32} />
+              <IconSymbol name="xmark" size={32} color="white" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -102,7 +102,7 @@ export const CameraModal = ({
               className="p-3 bg-black/50 rounded-full"
               onPress={toggleCameraFacing}
             >
-              <SwitchCamera color="white" size={32} />
+              <IconSymbol name="camera.rotate" size={32} color="white" />
             </TouchableOpacity>
           </View>
         </CameraView>

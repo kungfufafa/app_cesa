@@ -87,7 +87,7 @@ export function AuthBottomSheet() {
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
     >
-      <BottomSheetView className="flex-1 px-6 pt-2">
+      <BottomSheetView className="flex-1 px-6 pt-2 pb-8">
         <View className="items-center mb-6">
           <Text className="text-xl font-semibold text-foreground">
             Login untuk melanjutkan

@@ -1,4 +1,5 @@
 import { Text } from "@/components/ui/text";
+import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useRequestBottomSheet } from "@/store/useRequestBottomSheet";
@@ -9,20 +10,13 @@ import {
 } from "@gorhom/bottom-sheet";
 import { Href, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
-import {
-  Briefcase,
-  FileText,
-  LogOut,
-  RefreshCw,
-  type LucideIcon,
-} from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import { Alert, TouchableOpacity, View } from "react-native";
 
 type MenuItem = {
   id: string;
   title: string;
-  icon: LucideIcon;
+  icon: IconSymbolName;
   description: string;
   color: string;
   url?: string;
@@ -33,7 +27,7 @@ const MENU_ITEMS: MenuItem[] = [
   {
     id: "exit-clearance",
     title: "Exit Clearance",
-    icon: LogOut,
+    icon: "rectangle.portrait.and.arrow.right",
     description: "Process employee resignation",
     color: "#ef4444",
     url: "https://cesa.completeselular.com/exit-clearance",
@@ -41,24 +35,10 @@ const MENU_ITEMS: MenuItem[] = [
   {
     id: "form-transfer",
     title: "Form Transfer",
-    icon: RefreshCw,
+    icon: "arrow.left.arrow.right",
     description: "Transfer employee to another department",
     color: "#3b82f6",
     route: "/form-transfer",
-  },
-  {
-    id: "leave-request",
-    title: "Leave Request",
-    icon: Briefcase,
-    description: "Apply for annual or sick leave",
-    color: "#10b981",
-  },
-  {
-    id: "document-request",
-    title: "Document Request",
-    icon: FileText,
-    description: "Request official documents",
-    color: "#f59e0b",
   },
 ];
 
@@ -121,8 +101,9 @@ export function RequestBottomSheet() {
               onPress={() => handleMenuPress(item)}
             >
               <View className="w-8 h-8 rounded-full items-center justify-center mr-4 bg-secondary">
-                <item.icon
+                <IconSymbol
                   size={18}
+                  name={item.icon}
                   color={Colors[colorScheme ?? "light"].text}
                 />
               </View>

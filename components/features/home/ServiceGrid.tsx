@@ -15,7 +15,7 @@ export function ServiceGrid() {
         {firstRow.map((service) => (
           <ServiceItem
             key={service.id}
-            icon={service.icon}
+            iconName={service.iconName}
             image={service.image}
             label={service.label}
             url={service.url}
@@ -27,7 +27,7 @@ export function ServiceGrid() {
         {secondRow.map((service) => (
           <ServiceItem
             key={service.id}
-            icon={service.icon}
+            iconName={service.iconName}
             image={service.image}
             label={service.label}
             url={service.url}

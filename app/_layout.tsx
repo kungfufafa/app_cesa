@@ -1,5 +1,4 @@
 import "../global.css";
-import "@/lib/icons";
 import {
   DarkTheme,
   DefaultTheme,
@@ -69,7 +68,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
+      <Stack screenOptions={{ headerShown: true }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />

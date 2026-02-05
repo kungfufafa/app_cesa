@@ -5,13 +5,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuthStore } from "@/store/useAuthStore";
 import { ServiceGrid } from "@/components/features/home/ServiceGrid";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   AnnouncementCard,
   Announcement,
 } from "@/components/features/home/AnnouncementCard";
 import { MoreServicesSheet } from "@/components/features/home/MoreServicesSheet";
-import { Megaphone } from "lucide-react-native";
-import "@/lib/icons";
 import { getGreeting } from "@/lib/utils";
 
 const ANNOUNCEMENTS: Announcement[] = [
@@ -44,6 +45,8 @@ const ANNOUNCEMENTS: Announcement[] = [
 export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);
   const [refreshing, setRefreshing] = React.useState(false);
+  const colorScheme = useColorScheme();
+  const mutedIconColor = Colors[colorScheme ?? "light"].icon;
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -103,7 +106,11 @@ export default function HomeScreen() {
 
                 <View className="mt-6">
                   <View className="flex-row items-center gap-2 mb-3">
-                    <Megaphone size={16} className="text-muted-foreground" />
+                    <IconSymbol
+                      name="megaphone.fill"
+                      size={16}
+                      color={mutedIconColor}
+                    />
                     <Text className="text-sm font-medium text-foreground">
                       Pengumuman
                     </Text>

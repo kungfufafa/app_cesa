@@ -7,7 +7,6 @@ import { Text } from "@/components/ui/text";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ChevronRight } from "lucide-react-native";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useAuthBottomSheet } from "@/store/useAuthBottomSheet";
 
@@ -98,7 +97,7 @@ export default function ProfileScreen() {
               <IconSymbol name="person.fill" size={20} color="#71717a" />
               <Text>Edit Profile</Text>
             </View>
-            <ChevronRight size={18} color="#a1a1aa" />
+            <IconSymbol name="chevron.right" size={18} color="#a1a1aa" />
           </Button>
           <Separator className="my-0" />
           <Button
@@ -112,7 +111,7 @@ export default function ProfileScreen() {
               <IconSymbol name="gear" size={20} color="#71717a" />
               <Text>Settings</Text>
             </View>
-            <ChevronRight size={18} color="#a1a1aa" />
+            <IconSymbol name="chevron.right" size={18} color="#a1a1aa" />
           </Button>
           <Separator className="my-0" />
           <Button
@@ -130,7 +129,7 @@ export default function ProfileScreen() {
               />
               <Text>Help & Support</Text>
             </View>
-            <ChevronRight size={18} color="#a1a1aa" />
+            <IconSymbol name="chevron.right" size={18} color="#a1a1aa" />
           </Button>
         </Card>
 

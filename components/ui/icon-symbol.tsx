@@ -1,15 +1,13 @@
 // Fallback for using MaterialIcons on Android and web.
 
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { SymbolWeight, SymbolViewProps } from "expo-symbols";
-import { ComponentProps } from "react";
-import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
+import type { SymbolWeight, SymbolViewProps } from "expo-symbols";
+import type { ComponentProps } from "react";
+import type { OpaqueColorValue, StyleProp, TextStyle } from "react-native";
 
-type IconMapping = Record<
-  SymbolViewProps["name"],
-  ComponentProps<typeof MaterialIcons>["name"]
+type IconMapping = Partial<
+  Record<SymbolViewProps["name"], ComponentProps<typeof MaterialIcons>["name"]>
 >;
-export type IconSymbolName = keyof typeof MAPPING;
 
 /**
  * Add your SF Symbols to Material Icons mappings here.
@@ -18,15 +16,33 @@ export type IconSymbolName = keyof typeof MAPPING;
  */
 const MAPPING = {
   "house.fill": "home",
+  "chevron.left": "chevron-left",
   "chevron.right": "chevron-right",
   "clock.fill": "schedule",
+  clock: "schedule",
+  calendar: "calendar-today",
   "person.fill": "person",
   gear: "settings",
   "questionmark.circle": "help-outline",
   "rectangle.portrait.and.arrow.right": "logout",
   "person.2.fill": "groups",
   "tray.fill": "inbox",
-} as IconMapping;
+  plus: "add",
+  "arrow.left.arrow.right": "swap-horiz",
+  "megaphone.fill": "campaign",
+  nosign: "block",
+  "cart.fill": "shopping-cart",
+  headphones: "headset-mic",
+  scope: "my-location",
+  "shippingbox.fill": "inventory",
+  ellipsis: "more-horiz",
+  "doc.text.fill": "description",
+  "truck.box.fill": "local-shipping",
+  xmark: "close",
+  "camera.rotate": "flip-camera-ios",
+} as const satisfies IconMapping;
+
+export type IconSymbolName = keyof typeof MAPPING;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.

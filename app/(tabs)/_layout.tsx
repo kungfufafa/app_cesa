@@ -1,13 +1,17 @@
 import { Tabs } from "expo-router";
 import React from "react";
 import { View, TouchableOpacity } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useRequestBottomSheet } from "@/store/useRequestBottomSheet";
-import { Plus } from "lucide-react-native";
+import {
+  PRIMARY_GRADIENT,
+  PRIMARY_GRADIENT_LOCATIONS,
+} from "@/components/ui/Button";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -16,7 +20,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: PRIMARY_GRADIENT[1],
         headerShown: false,
         tabBarButton: HapticTab,
       }}
@@ -58,9 +62,15 @@ export default function TabLayout() {
                 openRequestSheet();
               }}
             >
-              <View className="w-14 h-14 rounded-full bg-primary justify-center items-center shadow-lg">
-                <Plus size={28} color="white" strokeWidth={2.5} />
-              </View>
+              <LinearGradient
+                colors={PRIMARY_GRADIENT}
+                locations={PRIMARY_GRADIENT_LOCATIONS}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                className="w-14 h-14 rounded-full justify-center items-center shadow-lg"
+              >
+                <IconSymbol size={28} name="plus" color="white" />
+              </LinearGradient>
             </TouchableOpacity>
           ),
         }}

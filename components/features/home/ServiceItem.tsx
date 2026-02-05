@@ -1,12 +1,14 @@
 import { Text } from "@/components/ui/text";
+import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import * as Linking from "expo-linking";
-import { LucideIcon } from "lucide-react-native";
 import React from "react";
 import { Image, TouchableOpacity, View } from "react-native";
 import { Href, useRouter } from "expo-router";
 
 interface ServiceItemProps {
-  icon?: LucideIcon;
+  iconName?: IconSymbolName;
   image?: any;
   label: string;
   url: string;
@@ -15,7 +17,7 @@ interface ServiceItemProps {
 }
 
 export function ServiceItem({
-  icon: Icon,
+  iconName,
   image,
   label,
   url,
@@ -23,6 +25,8 @@ export function ServiceItem({
   onPress,
 }: ServiceItemProps) {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const fallbackIconColor = Colors[colorScheme ?? "light"].icon;
 
   const handlePress = () => {
     if (onPress) {
@@ -45,8 +49,12 @@ export function ServiceItem({
       <View className="w-14 h-14 rounded-xl bg-secondary/50 border border-border items-center justify-center mb-1 overflow-hidden">
         {image ? (
           <Image source={image} className="w-full h-full" resizeMode="cover" />
-        ) : Icon ? (
-          <Icon size={24} color={iconColor} className="text-foreground" />
+        ) : iconName ? (
+          <IconSymbol
+            name={iconName}
+            size={24}
+            color={iconColor ?? fallbackIconColor}
+          />
         ) : null}
       </View>
       <Text

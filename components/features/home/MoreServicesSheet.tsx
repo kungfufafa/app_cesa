@@ -6,9 +6,11 @@ import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetScrollView,
+  BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import React, { useEffect, useRef, useMemo } from "react";
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ServiceItem } from "./ServiceItem";
 import { SERVICES } from "@/constants/services";
 
@@ -16,6 +18,7 @@ export function MoreServicesSheet() {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const { isOpen, close } = useMoreServicesStore();
   const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
 
   const snapPoints = useMemo(() => ["50%", "90%"], []);
 
@@ -53,17 +56,20 @@ export function MoreServicesSheet() {
         backgroundColor: Colors[colorScheme ?? "light"].icon,
       }}
     >
-      <View className="flex-1 px-4 pt-2">
+      <BottomSheetView className="flex-1 px-6 pt-2 pb-8">
         <Text className="text-lg font-semibold text-foreground mb-4 px-2">
           Semua Layanan
         </Text>
-        <BottomSheetScrollView contentContainerClassName="pb-8">
+        <BottomSheetScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+        >
           <View className="flex-row flex-wrap">
             {allServices.map((service) => (
               <View key={service.id} className="w-1/4 mb-4">
                 <ServiceItem
                   label={service.label}
-                  icon={service.icon}
+                  iconName={service.iconName}
                   image={service.image}
                   url={service.url}
                   iconColor={service.color}
@@ -72,7 +78,7 @@ export function MoreServicesSheet() {
             ))}
           </View>
         </BottomSheetScrollView>
-      </View>
+      </BottomSheetView>
     </BottomSheetModal>
   );
 }
