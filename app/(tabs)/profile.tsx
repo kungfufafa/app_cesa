@@ -6,21 +6,15 @@ import { Button } from "@/components/ui/Button";
 import { Text } from "@/components/ui/text";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useAuthBottomSheet } from "@/store/useAuthBottomSheet";
-import { useNetInfo } from "@react-native-community/netinfo";
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const { isAuthenticated } = useRequireAuth();
   const openSheet = useAuthBottomSheet((s) => s.open);
-  const netInfo = useNetInfo();
-  const isOffline =
-    netInfo.isConnected === false || netInfo.isInternetReachable === false;
-
   if (!isAuthenticated) {
     return (
       <SafeAreaView className="flex-1 bg-background">
@@ -82,11 +76,6 @@ export default function ProfileScreen() {
               <Text variant="muted" className="mb-1">
                 {displayEmail}
               </Text>
-              {isOffline ? (
-                <Badge variant="destructive" className="self-start mt-1">
-                  <Text className="text-white text-[11px]">Offline</Text>
-                </Badge>
-              ) : null}
             </View>
             <View className="w-20 h-20 rounded-full bg-secondary items-center justify-center border border-border">
               <Text variant="h3">{getInitials(displayName)}</Text>

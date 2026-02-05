@@ -25,6 +25,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { AuthBottomSheet } from "@/components/features/auth/AuthBottomSheet";
 import { RequestBottomSheet } from "@/components/features/request/RequestBottomSheet";
 import { Colors } from "@/constants/theme";
+import { OfflineBanner } from "@/components/features/network/OfflineBanner";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -84,6 +85,7 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <BottomSheetModalProvider>
           <RootLayoutNav />
+          <OfflineBanner />
           <AuthBottomSheet />
           <RequestBottomSheet />
           <PortalHost />

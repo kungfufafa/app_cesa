@@ -47,9 +47,8 @@ export function AuthBottomSheet() {
     setErrors([]);
   };
 
-  const normalizeErrorList = (message: string) =>
-    message
-      .split("\n")
+  const normalizeErrorList = (message: string | string[]) =>
+    (Array.isArray(message) ? message : message.split("\n"))
       .map((item) => item.trim())
       .filter(Boolean);
 
@@ -61,16 +60,21 @@ export function AuthBottomSheet() {
     setErrors([]);
     setIsLoading(true);
     try {
-      await signIn({ email, password });
-      close();
-      executeCallback();
-      resetForm();
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Login gagal. Coba lagi.";
-      setErrors(normalizeErrorList(message));
+      const result = await signIn({ email, password });
+      if (result.ok) {
+        close();
+        executeCallback();
+        resetForm();
+        return;
+      }
+
+      const messageSource =
+        result.error.messages ??
+        result.error.message ??
+        "Login gagal. Coba lagi.";
+      setErrors(normalizeErrorList(messageSource));
+    } catch {
+      setErrors(normalizeErrorList("Login gagal. Coba lagi."));
     } finally {
       setIsLoading(false);
     }

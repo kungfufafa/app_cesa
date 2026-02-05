@@ -32,10 +32,10 @@ export default function HomeScreen() {
                 <View className="flex-row justify-between items-center">
                   <View>
                     <Text className="text-xl font-semibold text-white tracking-tight">
-                      {getGreeting()}, {user?.name?.split(" ")[0] || "User"}
+                      {getGreeting()},
                     </Text>
                     <Text className="text-sm text-white/80">
-                      Mau ngapain hari ini?
+                      {user?.name?.trim() || "User"}
                     </Text>
                   </View>
                   <View className="w-10 h-10 rounded-full bg-white/20 items-center justify-center border border-white/30">
