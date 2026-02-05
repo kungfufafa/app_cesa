@@ -1,8 +1,10 @@
 import React from "react";
-import { Image, TouchableOpacity, View } from "react-native";
+import { Image, Pressable, TouchableOpacity, View } from "react-native";
 import { Text } from "@/components/ui/text";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { type Employee } from "@/services/employee";
 import { useRouter } from "expo-router";
+import { openExternalUrl } from "@/lib/open-url";
 
 function getDisplayName(employee: Employee) {
   return [employee.first_name, employee.last_name].filter(Boolean).join(" ").trim();
@@ -13,6 +15,23 @@ function getInitials(name: string) {
   if (tokens.length === 0) return "?";
   if (tokens.length === 1) return tokens[0].slice(0, 2).toUpperCase();
   return `${tokens[0][0]}${tokens[1][0]}`.toUpperCase();
+}
+
+function formatPhoneForWhatsApp(input?: string | null) {
+  if (!input) return "";
+  let digits = input.replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("0")) {
+    digits = `62${digits.slice(1)}`;
+  } else if (digits.startsWith("8")) {
+    digits = `62${digits}`;
+  }
+  return digits;
+}
+
+function formatPhoneForTel(input?: string | null) {
+  if (!input) return "";
+  return input.replace(/[^\d+]/g, "");
 }
 
 type EmployeeListItemProps = {
@@ -26,6 +45,12 @@ export function EmployeeListItem({ employee }: EmployeeListItemProps) {
     employee.avatar && !employee.avatar.endsWith("/blank.jpg")
       ? employee.avatar
       : null;
+  const mobilePhone = employee.mobile_phone?.trim() || "";
+  const landlinePhone = employee.phone?.trim() || "";
+  const telPhone = formatPhoneForTel(landlinePhone || mobilePhone);
+  const waPhone = formatPhoneForWhatsApp(mobilePhone || landlinePhone);
+  const hasTel = Boolean(telPhone);
+  const hasWa = Boolean(waPhone);
 
   return (
     <TouchableOpacity
@@ -58,6 +83,46 @@ export function EmployeeListItem({ employee }: EmployeeListItemProps) {
         <Text className="text-[11px] text-muted-foreground mt-1" numberOfLines={1}>
           ID: {employee.id_employee}
         </Text>
+      </View>
+
+      <View className="flex-row items-center gap-2 ml-3">
+        <Pressable
+          className={`w-8 h-8 rounded-full border border-border items-center justify-center ${
+            hasTel ? "bg-card active:bg-secondary/40" : "bg-muted/40"
+          }`}
+          accessibilityRole="button"
+          accessibilityLabel="Telepon"
+          disabled={!hasTel}
+          onPress={(e) => {
+            e.stopPropagation();
+            if (hasTel) {
+              void openExternalUrl(`tel:${telPhone}`, {
+                fallbackMessage: "Tidak bisa membuka Telepon di perangkat ini.",
+              });
+            }
+          }}
+        >
+          <IconSymbol name="phone.fill" size={16} color="#71717a" />
+        </Pressable>
+        <Pressable
+          className={`w-8 h-8 rounded-full border border-border items-center justify-center ${
+            hasWa ? "bg-card active:bg-secondary/40" : "bg-muted/40"
+          }`}
+          accessibilityRole="button"
+          accessibilityLabel="WhatsApp"
+          disabled={!hasWa}
+          onPress={(e) => {
+            e.stopPropagation();
+            if (hasWa) {
+              void openExternalUrl(`https://wa.me/${waPhone}`, {
+                fallbackMessage:
+                  "Tidak bisa membuka WhatsApp di perangkat ini.",
+              });
+            }
+          }}
+        >
+          <IconSymbol name="message.fill" size={16} color="#71717a" />
+        </Pressable>
       </View>
     </TouchableOpacity>
   );

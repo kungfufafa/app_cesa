@@ -6,15 +6,20 @@ import { Button } from "@/components/ui/Button";
 import { Text } from "@/components/ui/text";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useAuthBottomSheet } from "@/store/useAuthBottomSheet";
+import { useNetInfo } from "@react-native-community/netinfo";
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const { isAuthenticated } = useRequireAuth();
   const openSheet = useAuthBottomSheet((s) => s.open);
+  const netInfo = useNetInfo();
+  const isOffline =
+    netInfo.isConnected === false || netInfo.isInternetReachable === false;
 
   if (!isAuthenticated) {
     return (
@@ -60,32 +65,36 @@ export default function ProfileScreen() {
       .slice(0, 2);
   };
 
+  const name = user?.name?.trim() || "";
+  const email = user?.email?.trim() || "";
+  const displayName = name || email || "User";
+  const displayEmail = email || "email@example.com";
+
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <View className="flex-1 p-4 gap-6">
-        <Card>
-          <CardContent className="items-center py-6">
-            <View className="w-20 h-20 rounded-full bg-secondary items-center justify-center mb-4 border border-border">
-              <Text variant="h3">{getInitials(user?.name)}</Text>
-            </View>
-            <Text variant="large" className="mb-1">
-              {user?.name || "User Name"}
-            </Text>
-            <Text variant="muted" className="mb-2">
-              {user?.email || "email@example.com"}
-            </Text>
-            <View className="bg-secondary px-2 py-0.5 rounded border border-border">
-              <Text
-                variant="small"
-                className="text-muted-foreground text-[10px] uppercase tracking-wider"
-              >
-                ID: {user?.id || "---"}
+        <Card className="py-0">
+          <CardContent className="flex-row items-center justify-between py-6 gap-4">
+            <View className="flex-1">
+              <Text variant="large" className="mb-1">
+                {displayName}
               </Text>
+              <Text variant="muted" className="mb-1">
+                {displayEmail}
+              </Text>
+              {isOffline ? (
+                <Badge variant="destructive" className="self-start mt-1">
+                  <Text className="text-white text-[11px]">Offline</Text>
+                </Badge>
+              ) : null}
+            </View>
+            <View className="w-20 h-20 rounded-full bg-secondary items-center justify-center border border-border">
+              <Text variant="h3">{getInitials(displayName)}</Text>
             </View>
           </CardContent>
         </Card>
 
-        <Card className="py-0">
+        <Card className="py-0 gap-0">
           <Button
             variant="ghost"
             className="justify-between px-4 py-4 rounded-none"
@@ -133,7 +142,7 @@ export default function ProfileScreen() {
           </Button>
         </Card>
 
-        <Card className="py-0">
+        <Card className="py-0 gap-0">
           <Button
             variant="ghost"
             className="justify-between px-4 py-4 rounded-none"

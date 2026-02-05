@@ -28,6 +28,9 @@ const MAPPING = {
   "person.2.fill": "groups",
   "tray.fill": "inbox",
   plus: "add",
+  "envelope.fill": "email",
+  "phone.fill": "phone",
+  "message.fill": "message",
   "arrow.left.arrow.right": "swap-horiz",
   "megaphone.fill": "campaign",
   nosign: "block",
@@ -40,6 +43,8 @@ const MAPPING = {
   "truck.box.fill": "local-shipping",
   xmark: "close",
   "camera.rotate": "flip-camera-ios",
+  eye: "visibility",
+  "eye.slash": "visibility-off",
 } as const satisfies IconMapping;
 
 export type IconSymbolName = keyof typeof MAPPING;

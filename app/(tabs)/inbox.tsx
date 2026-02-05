@@ -42,7 +42,7 @@ export default function InboxScreen() {
           Inbox
         </Text>
         <Text variant="muted" className="text-center">
-          Your messages and notifications will appear here.
+          Coming soon, this feature is under development.
         </Text>
       </View>
     </SafeAreaView>

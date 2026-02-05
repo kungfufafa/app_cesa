@@ -1,10 +1,13 @@
 import React from "react";
-import { ActivityIndicator, Image, ScrollView, View } from "react-native";
+import { Image, Pressable, ScrollView, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 
-import { Card, CardContent } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
+import { Skeleton } from "@/components/ui/skeleton";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { getEmployeeDirectory, type Employee } from "@/services/employee";
+import { openExternalUrl } from "@/lib/open-url";
 
 function getDisplayName(employee: Employee) {
   return [employee.first_name, employee.last_name].filter(Boolean).join(" ").trim();
@@ -17,6 +20,24 @@ function getInitials(name: string) {
   return `${tokens[0][0]}${tokens[1][0]}`.toUpperCase();
 }
 
+function formatPhoneForWhatsApp(input?: string | null) {
+  if (!input) return "";
+  let digits = input.replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("0")) {
+    digits = `62${digits.slice(1)}`;
+  } else if (digits.startsWith("8")) {
+    digits = `62${digits}`;
+  }
+  return digits;
+}
+
+function formatPhoneForTel(input?: string | null) {
+  if (!input) return "";
+  const cleaned = input.replace(/[^\d+]/g, "");
+  return cleaned;
+}
+
 function Field({
   label,
   value,
@@ -26,14 +47,15 @@ function Field({
 }) {
   const display = value && value.trim().length > 0 ? value : "-";
   return (
-    <View className="py-2">
-      <Text className="text-xs text-muted-foreground mb-1">{label}</Text>
+    <View className="gap-1">
+      <Text className="text-xs text-muted-foreground">{label}</Text>
       <Text className="text-base text-foreground">{display}</Text>
     </View>
   );
 }
 
 export function EmployeeDetail({ employeeId }: { employeeId?: string }) {
+  const insets = useSafeAreaInsets();
   const { data: employees, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["employee-directory"],
     queryFn: getEmployeeDirectory,
@@ -45,11 +67,7 @@ export function EmployeeDetail({ employeeId }: { employeeId?: string }) {
   }, [employees, employeeId]);
 
   if (isLoading) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return <EmployeeDetailSkeleton />;
   }
 
   if (isError) {
@@ -90,12 +108,24 @@ export function EmployeeDetail({ employeeId }: { employeeId?: string }) {
     employee.avatar && !employee.avatar.endsWith("/blank.jpg")
       ? employee.avatar
       : null;
+  const email = employee.email?.trim() || "";
+  const mobilePhone = employee.mobile_phone?.trim() || "";
+  const landlinePhone = employee.phone?.trim() || "";
+  const telPhone = formatPhoneForTel(landlinePhone || mobilePhone);
+  const waPhone = formatPhoneForWhatsApp(mobilePhone || landlinePhone);
+  const hasEmail = Boolean(email);
+  const hasTel = Boolean(telPhone);
+  const hasWa = Boolean(waPhone);
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="p-4 pb-10">
-      <Card className="py-0">
-        <CardContent className="py-6 items-center">
-          <View className="w-24 h-24 rounded-full bg-secondary/60 border border-border items-center justify-center overflow-hidden mb-4">
+    <ScrollView
+      className="flex-1 bg-background"
+      contentContainerClassName="px-4 pt-2"
+      contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+    >
+      <View className="bg-card rounded-xl border border-border p-4">
+        <View className="items-center gap-3">
+          <View className="w-24 h-24 rounded-full bg-secondary/60 border border-border items-center justify-center overflow-hidden">
             {avatarUri ? (
               <Image
                 source={{ uri: avatarUri }}
@@ -108,78 +138,168 @@ export function EmployeeDetail({ employeeId }: { employeeId?: string }) {
               </Text>
             )}
           </View>
-          <Text variant="h3" className="text-center" numberOfLines={2}>
-            {name || employee.email || employee.id_employee}
-          </Text>
-          <Text variant="muted" className="mt-1 text-center">
-            {employee.job}
-          </Text>
-          <View className="bg-secondary px-2 py-0.5 rounded border border-border mt-3">
-            <Text
-              variant="small"
-              className="text-muted-foreground text-[10px] uppercase tracking-wider"
-            >
-              ID: {employee.id_employee}
+          <View className="items-center gap-1">
+            <Text variant="h3" className="text-center" numberOfLines={2}>
+              {name || employee.email || employee.id_employee}
+            </Text>
+            <Text variant="muted" className="text-center">
+              {employee.job}
             </Text>
           </View>
-        </CardContent>
-      </Card>
+          {(hasEmail || hasTel || hasWa) ? (
+            <View className="flex-row gap-3">
+              {hasEmail ? (
+                <Pressable
+                  className="w-10 h-10 rounded-full border border-border items-center justify-center bg-card active:bg-secondary/50"
+                  accessibilityRole="button"
+                  accessibilityLabel="Email"
+                  onPress={() => {
+                    void openExternalUrl(`mailto:${email}`, {
+                      fallbackMessage:
+                        "Tidak bisa membuka aplikasi Email di perangkat ini.",
+                    });
+                  }}
+                >
+                  <IconSymbol name="envelope.fill" size={18} color="#71717a" />
+                </Pressable>
+              ) : null}
+              {hasTel ? (
+                <Pressable
+                  className="w-10 h-10 rounded-full border border-border items-center justify-center bg-card active:bg-secondary/50"
+                  accessibilityRole="button"
+                  accessibilityLabel="Telepon"
+                  onPress={() => {
+                    void openExternalUrl(`tel:${telPhone}`, {
+                      fallbackMessage:
+                        "Tidak bisa membuka Telepon di perangkat ini.",
+                    });
+                  }}
+                >
+                  <IconSymbol name="phone.fill" size={18} color="#71717a" />
+                </Pressable>
+              ) : null}
+              {hasWa ? (
+                <Pressable
+                  className="w-10 h-10 rounded-full border border-border items-center justify-center bg-card active:bg-secondary/50"
+                  accessibilityRole="button"
+                  accessibilityLabel="WhatsApp"
+                  onPress={() => {
+                    void openExternalUrl(`https://wa.me/${waPhone}`, {
+                      fallbackMessage:
+                        "Tidak bisa membuka WhatsApp di perangkat ini.",
+                    });
+                  }}
+                >
+                  <IconSymbol name="message.fill" size={18} color="#71717a" />
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      </View>
 
-      <View className="h-4" />
+      <View className="h-3" />
 
-      <Card className="py-0">
-        <CardContent className="py-4">
-          <Text className="text-sm font-semibold text-foreground mb-2">
-            Informasi Kerja
-          </Text>
+      <View className="bg-card rounded-xl border border-border p-4">
+        <Text className="text-sm font-semibold text-foreground mb-3">
+          Informasi Kerja
+        </Text>
+        <View className="gap-3">
+          <Field label="ID" value={employee.id_employee} />
           <Field label="Branch" value={employee.branch} />
-          <View className="h-[1px] bg-border" />
           <Field label="Organization" value={employee.organization} />
-          <View className="h-[1px] bg-border" />
           <Field label="Title" value={employee.title} />
-          <View className="h-[1px] bg-border" />
           <Field label="Job" value={employee.job} />
-          <View className="h-[1px] bg-border" />
           <Field label="Join Date" value={employee.join_date} />
-        </CardContent>
-      </Card>
+        </View>
+      </View>
 
-      <View className="h-4" />
+      <View className="h-3" />
 
-      <Card className="py-0">
-        <CardContent className="py-4">
-          <Text className="text-sm font-semibold text-foreground mb-2">
-            Kontak
-          </Text>
+      <View className="bg-card rounded-xl border border-border p-4">
+        <Text className="text-sm font-semibold text-foreground mb-3">
+          Kontak
+        </Text>
+        <View className="gap-3">
           <Field label="Email" value={employee.email} />
-          <View className="h-[1px] bg-border" />
           <Field label="Mobile Phone" value={employee.mobile_phone} />
-          <View className="h-[1px] bg-border" />
           <Field label="Phone" value={employee.phone} />
-        </CardContent>
-      </Card>
+        </View>
+      </View>
 
-      <View className="h-4" />
+      <View className="h-3" />
 
-      <Card className="py-0">
-        <CardContent className="py-4">
-          <Text className="text-sm font-semibold text-foreground mb-2">
-            Data Personal
-          </Text>
+      <View className="bg-card rounded-xl border border-border p-4">
+        <Text className="text-sm font-semibold text-foreground mb-3">
+          Data Personal
+        </Text>
+        <View className="gap-3">
           <Field label="Gender" value={employee.gender} />
-          <View className="h-[1px] bg-border" />
           <Field label="Birth Date" value={employee.birth_date} />
-          <View className="h-[1px] bg-border" />
           <Field label="Marital Status" value={employee.marital_status} />
-          <View className="h-[1px] bg-border" />
           <Field label="Tax Status" value={employee.tax_status} />
-          <View className="h-[1px] bg-border" />
           <Field label="Religion" value={employee.religion} />
-          <View className="h-[1px] bg-border" />
           <Field label="Blood Type" value={employee.blood_type} />
-        </CardContent>
-      </Card>
+        </View>
+      </View>
     </ScrollView>
   );
 }
 
+function EmployeeDetailSkeleton() {
+  return (
+    <ScrollView
+      className="flex-1 bg-background"
+      contentContainerClassName="px-4 pt-2 pb-6"
+    >
+      <View className="bg-card rounded-xl border border-border p-4">
+        <View className="items-center gap-3">
+          <Skeleton className="w-24 h-24 rounded-full" />
+          <View className="items-center gap-2 w-full">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-28" />
+          </View>
+          <View className="flex-row gap-3">
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <Skeleton className="w-10 h-10 rounded-full" />
+          </View>
+        </View>
+      </View>
+
+      <View className="h-3" />
+
+      <DetailSectionSkeleton titleWidth="w-36" rows={6} />
+
+      <View className="h-3" />
+
+      <DetailSectionSkeleton titleWidth="w-20" rows={3} />
+
+      <View className="h-3" />
+
+      <DetailSectionSkeleton titleWidth="w-28" rows={6} />
+    </ScrollView>
+  );
+}
+
+function DetailSectionSkeleton({
+  titleWidth,
+  rows,
+}: {
+  titleWidth: string;
+  rows: number;
+}) {
+  return (
+    <View className="bg-card rounded-xl border border-border p-4">
+      <Skeleton className={`h-4 ${titleWidth} mb-4`} />
+      <View className="gap-3">
+        {Array.from({ length: rows }, (_, index) => (
+          <View key={index} className="gap-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-4 w-40" />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}

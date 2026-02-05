@@ -1,9 +1,10 @@
 import React from "react";
-import { ActivityIndicator, FlatList, View } from "react-native";
+import { FlatList, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 
 import { Input } from "@/components/ui/Input";
 import { Text } from "@/components/ui/text";
+import { Skeleton } from "@/components/ui/skeleton";
 import { EmployeeListItem } from "@/components/features/employee/EmployeeListItem";
 import { getEmployeeDirectory, type Employee } from "@/services/employee";
 
@@ -49,11 +50,7 @@ export function EmployeeDirectory() {
   }, [employees, q]);
 
   if (isLoading) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return <EmployeeDirectorySkeleton />;
   }
 
   if (isError) {
@@ -119,3 +116,36 @@ export function EmployeeDirectory() {
   );
 }
 
+function EmployeeDirectorySkeleton() {
+  const items = Array.from({ length: 6 }, (_, index) => index);
+
+  return (
+    <View className="flex-1 bg-background">
+      <View className="px-4 pt-2 pb-3">
+        <Skeleton className="h-7 w-48 mb-2" />
+        <Skeleton className="h-4 w-56 mb-3" />
+        <Skeleton className="h-11 w-full rounded-lg" />
+      </View>
+
+      <View className="px-4 pb-10 gap-3">
+        {items.map((item) => (
+          <View
+            key={item}
+            className="flex-row items-center p-4 bg-card rounded-xl border border-border"
+          >
+            <Skeleton className="w-11 h-11 rounded-full" />
+            <View className="flex-1 ml-4 gap-2">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-3 w-24" />
+            </View>
+            <View className="flex-row items-center gap-2 ml-3">
+              <Skeleton className="w-8 h-8 rounded-full" />
+              <Skeleton className="w-8 h-8 rounded-full" />
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}

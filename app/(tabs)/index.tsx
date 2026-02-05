@@ -1,66 +1,15 @@
 import React from "react";
-import { View, FlatList, RefreshControl } from "react-native";
+import { View, FlatList } from "react-native";
 import { Text } from "@/components/ui/text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuthStore } from "@/store/useAuthStore";
 import { ServiceGrid } from "@/components/features/home/ServiceGrid";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import {
-  AnnouncementCard,
-  Announcement,
-} from "@/components/features/home/AnnouncementCard";
 import { MoreServicesSheet } from "@/components/features/home/MoreServicesSheet";
 import { getGreeting } from "@/lib/utils";
 
-const ANNOUNCEMENTS: Announcement[] = [
-  {
-    id: "1",
-    type: "info",
-    title: "Libur Natal & Tahun Baru 2025",
-    date: "2024-12-20",
-    preview:
-      "Kantor akan tutup pada tanggal 25 Desember 2024 dan 1 Januari 2025. Selamat berlibur!",
-  },
-  {
-    id: "2",
-    type: "warning",
-    title: "Maintenance System HRIS",
-    date: "2024-12-18",
-    preview:
-      "Akan ada maintenance pada sistem HRIS pada tanggal 22 Desember 2024 pukul 22:00 - 02:00 WIB.",
-  },
-  {
-    id: "3",
-    type: "info",
-    title: "Update Kebijakan Cuti 2025",
-    date: "2024-12-15",
-    preview:
-      "Kebijakan cuti tahunan akan diperbarui mulai Januari 2025. Silakan cek email untuk detail.",
-  },
-];
-
 export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const colorScheme = useColorScheme();
-  const mutedIconColor = Colors[colorScheme ?? "light"].icon;
-
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
-
-  const renderAnnouncement = React.useCallback(
-    ({ item }: { item: Announcement }) => (
-      <View className="px-4">
-        <AnnouncementCard announcement={item} />
-      </View>
-    ),
-    []
-  );
 
   return (
     <View className="flex-1 bg-background">
@@ -73,14 +22,10 @@ export default function HomeScreen() {
 
       <SafeAreaView className="flex-1">
         <FlatList
-          data={ANNOUNCEMENTS}
-          keyExtractor={(item) => item.id}
-          renderItem={renderAnnouncement}
-          ItemSeparatorComponent={() => <View className="h-3" />}
+          data={[]}
+          keyExtractor={(_, index) => String(index)}
+          renderItem={() => null}
           contentContainerClassName="pb-10"
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
           ListHeaderComponent={
             <>
               <View className="px-5 pt-2 pb-8">
@@ -104,17 +49,12 @@ export default function HomeScreen() {
               <View className="px-4 -mt-2">
                 <ServiceGrid />
 
-                <View className="mt-6">
-                  <View className="flex-row items-center gap-2 mb-3">
-                    <IconSymbol
-                      name="megaphone.fill"
-                      size={16}
-                      color={mutedIconColor}
-                    />
-                    <Text className="text-sm font-medium text-foreground">
-                      Pengumuman
-                    </Text>
-                  </View>
+                <View className="mt-5 rounded-xl border border-border bg-muted/40 px-4 py-3">
+                  <Text className="text-xs text-muted-foreground leading-5">
+                    Aplikasi ini masih dalam tahap uji coba dan pengembangan.
+                    Fitur dapat berubah sewaktu-waktu dan belum siap digunakan
+                    untuk produksi.
+                  </Text>
                 </View>
               </View>
             </>
