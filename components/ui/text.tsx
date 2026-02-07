@@ -101,7 +101,6 @@ function Text({
   React.RefAttributes<RNText> & {
     asChild?: boolean;
   }) {
-  /* eslint-disable react-hooks/exhaustive-deps */
   const textClass = React.useContext(TextClassContext);
   const Component = asChild ? Slot.Text : RNText;
   let fontFamily =

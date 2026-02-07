@@ -9,7 +9,7 @@ Strict separation between UI primitives and Feature components.
 - `ui/`: Generic, styled primitives. **NO** business logic.
   - Examples: `components/ui/button.tsx`, `components/ui/card.tsx`.
 - `features/`: Domain-specific components. Contains business logic.
-  - Examples: `components/features/attendance/StatusCard.tsx`.
+  - Examples: `components/features/presensi/AttendanceActionCard.tsx`.
 
 ## Conventions
 

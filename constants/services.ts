@@ -55,7 +55,7 @@ export const SERVICES: ServiceItemConfig[] = [
     label: "Attendance",
     iconName: "clock.fill",
     image: require("@/assets/images/icons/attendance.png"),
-    url: "https://attendance.completeselular.com/",
+    url: "/presensi",
     color: "#3b82f6",
   },
   {

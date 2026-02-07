@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Alert } from "react-native";
+import { View, Alert, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/Button";
@@ -42,11 +42,27 @@ export default function ProfileScreen() {
       {
         text: "Sign Out",
         style: "destructive",
-        onPress: async () => {
-          await signOut();
+        onPress: () => {
+          signOut().catch((e) => {
+            if (__DEV__) console.warn("Sign out failed", e);
+          });
         },
       },
     ]);
+  };
+
+  const handleOpenDeveloperWhatsApp = async () => {
+    const whatsappUrl = "https://wa.me/62895636786435";
+    try {
+      const canOpen = await Linking.canOpenURL(whatsappUrl);
+      if (!canOpen) {
+        Alert.alert("Error", "WhatsApp tidak dapat dibuka di perangkat ini.");
+        return;
+      }
+      await Linking.openURL(whatsappUrl);
+    } catch {
+      Alert.alert("Error", "Gagal membuka WhatsApp.");
+    }
   };
 
   const getInitials = (name?: string) => {
@@ -150,6 +166,16 @@ export default function ProfileScreen() {
 
         <Text variant="muted" className="text-center text-xs mt-auto">
           Version 1.0.0
+        </Text>
+        <Text variant="muted" className="text-center text-xs -mt-4">
+          Engineered by{" "}
+          <Text
+            className="text-primary font-semibold text-xs"
+            onPress={handleOpenDeveloperWhatsApp}
+          >
+            Web App Developer
+          </Text>
+          {" • Supported by IT Support Division"}
         </Text>
       </View>
     </SafeAreaView>

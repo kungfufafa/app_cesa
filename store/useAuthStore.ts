@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import axios from 'axios';
 import NetInfo from '@react-native-community/netinfo';
 import * as SecureStore from 'expo-secure-store';
-import { setAuthToken } from '../services/api';
+import { setAuthToken, setOnUnauthorized } from '../services/api';
 import { login, LoginCredentials, AuthResponse, getMe, logout } from '../services/auth';
 
 const extractTokenString = (token: AuthResponse['token']): string | null => {
@@ -19,7 +19,9 @@ const extractTokenString = (token: AuthResponse['token']): string | null => {
       record.id_token,
       record.idToken,
     ];
-    const found = candidates.find((value) => typeof value === 'string' && value.length > 0);
+    const found = candidates.find(
+      (value): value is string => typeof value === 'string' && value.length > 0
+    );
     return found ?? null;
   }
   return null;
@@ -146,20 +148,20 @@ const buildAuthError = (error: unknown): AuthError => {
 };
 
 const logAuthError = (error: unknown, authError: AuthError) => {
+  if (!__DEV__) return;
+
   if (!axios.isAxiosError(error)) {
-    console.error('Login failed', error);
+    console.warn('Login failed', error);
     return;
   }
 
   const status = error.response?.status;
   if (status && [400, 401, 403, 422, 429].includes(status)) {
-    if (__DEV__) {
-      console.info('Login failed', {
-        status,
-        type: authError.type,
-        errors: toAuthErrorMessages(authError),
-      });
-    }
+    console.info('Login failed', {
+      status,
+      type: authError.type,
+      errors: toAuthErrorMessages(authError),
+    });
     return;
   }
 
@@ -169,7 +171,7 @@ const logAuthError = (error: unknown, authError: AuthError) => {
       ? (data as ApiErrorPayload).message
       : undefined;
 
-  console.error('Login failed', {
+  console.warn('Login failed', {
     status,
     url: error.config?.url,
     method: error.config?.method,
@@ -205,7 +207,7 @@ interface AuthState {
   restoreSession: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
   user: null,
   isAuthenticated: false,
@@ -245,7 +247,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await logout();
     } catch (error) {
-      console.warn('Logout request failed', error);
+      if (__DEV__) console.warn('Logout request failed', error);
     } finally {
       await SecureStore.deleteItemAsync('token');
       await SecureStore.deleteItemAsync('user');
@@ -299,7 +301,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      console.error('Failed to restore token', e);
+      if (__DEV__) console.warn('Failed to restore token', e);
       if (!storedToken) {
         await clearStoredAuth();
         set({ token: null, user: null, isAuthenticated: false, isLoading: false });
@@ -309,3 +311,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 }));
+
+// Auto-logout when API returns 401
+setOnUnauthorized(() => {
+  useAuthStore.setState({ token: null, user: null, isAuthenticated: false });
+});

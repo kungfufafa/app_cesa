@@ -1,5 +1,5 @@
 import React from "react";
-import { View, FlatList, TouchableOpacity, Pressable } from "react-native";
+import { View, FlatList, TouchableOpacity, Pressable, Alert } from "react-native";
 import { Text } from "@/components/ui/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
@@ -60,8 +60,12 @@ export default function FormTransferScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const handlePress = (url: string) => {
-    Linking.openURL(url);
+  const handlePress = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Error", "Tidak bisa membuka tautan ini.");
+    }
   };
 
   const data =

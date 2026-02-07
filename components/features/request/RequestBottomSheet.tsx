@@ -8,7 +8,7 @@ import {
   BottomSheetModal,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import { Href, useRouter } from "expo-router";
+import { Href, router } from "expo-router";
 import * as Linking from "expo-linking";
 import React, { useEffect, useRef } from "react";
 import { Alert, TouchableOpacity, View } from "react-native";
@@ -46,7 +46,6 @@ export function RequestBottomSheet() {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const { isOpen, close } = useRequestBottomSheet();
   const colorScheme = useColorScheme();
-  const router = useRouter();
 
   useEffect(() => {
     if (isOpen) {

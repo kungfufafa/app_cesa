@@ -18,6 +18,7 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { PortalHost } from "@rn-primitives/portal";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -26,6 +27,8 @@ import { AuthBottomSheet } from "@/components/features/auth/AuthBottomSheet";
 import { RequestBottomSheet } from "@/components/features/request/RequestBottomSheet";
 import { Colors } from "@/constants/theme";
 import { OfflineBanner } from "@/components/features/network/OfflineBanner";
+import { initializeNotificationHandler } from "@/services/presensi/notifications";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -53,7 +56,10 @@ function RootLayoutNav() {
   });
 
   useEffect(() => {
-    restoreSession();
+    restoreSession().catch((e) => {
+      if (__DEV__) console.warn("Failed to restore session", e);
+    });
+    initializeNotificationHandler();
   }, [restoreSession]);
 
   if (!fontsLoaded || isLoading) {
@@ -69,7 +75,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: true }}>
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
@@ -77,20 +83,20 @@ function RootLayoutNav() {
   );
 }
 
-import { PortalHost } from "@rn-primitives/portal";
-
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <BottomSheetModalProvider>
-          <RootLayoutNav />
-          <OfflineBanner />
-          <AuthBottomSheet />
-          <RequestBottomSheet />
-          <PortalHost />
-        </BottomSheetModalProvider>
-      </GestureHandlerRootView>
+      <ErrorBoundary>
+        <GestureHandlerRootView className="flex-1">
+          <BottomSheetModalProvider>
+            <RootLayoutNav />
+            <OfflineBanner />
+            <AuthBottomSheet />
+            <RequestBottomSheet />
+            <PortalHost />
+          </BottomSheetModalProvider>
+        </GestureHandlerRootView>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }

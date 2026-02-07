@@ -62,6 +62,11 @@ export default function EmployeeDetailScreen() {
             <Text className="text-primary-foreground">Login</Text>
           </Button>
         </View>
+      ) : !id ? (
+        <View className="flex-1 justify-center items-center px-6">
+          <Text variant="h4" className="mb-2">Data tidak ditemukan</Text>
+          <Text variant="muted" className="text-center">ID karyawan tidak valid.</Text>
+        </View>
       ) : (
         <EmployeeDetail employeeId={id} />
       )}

@@ -1,12 +1,10 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { View, TouchableOpacity } from "react-native";
+import { TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useRequestBottomSheet } from "@/store/useRequestBottomSheet";
 import {
   PRIMARY_GRADIENT,
@@ -14,7 +12,6 @@ import {
 } from "@/components/ui/Button";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const openRequestSheet = useRequestBottomSheet((s) => s.open);
 
   return (
@@ -52,11 +49,8 @@ export default function TabLayout() {
           tabBarButton: (props: any) => (
             <TouchableOpacity
               {...props}
-              className="justify-center items-center"
-              style={{
-                top: -20,
-                ...(props.style as any),
-              }}
+              className="justify-center items-center -top-5"
+              style={props.style as any}
               onPress={(e: any) => {
                 e.preventDefault();
                 openRequestSheet();
