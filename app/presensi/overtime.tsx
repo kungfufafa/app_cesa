@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Text } from "@/components/ui/text";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -8,6 +9,10 @@ import {
   OvertimeItem,
   submitOvertime,
 } from "@/services/presensi/forms";
+import { normalizeApiError } from "@/lib/api-errors";
+import { getStatusBadgeClasses, getStatusLabel } from "@/lib/status-helpers";
+import { formatTimeString } from "@/lib/dates";
+import { createFormData, normalizeMimeType } from "@/lib/form-data";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -15,8 +20,8 @@ import {
   BottomSheetTextInput,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import { isAxiosError } from "axios";
 import { LinearGradient } from "expo-linear-gradient";
+import * as DocumentPicker from "expo-document-picker";
 import { Stack, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -29,66 +34,12 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-function statusBadgeClass(status: string): { container: string; text: string } {
-  switch (status.toLowerCase()) {
-    case "approved":
-      return { container: "bg-emerald-100", text: "text-emerald-700" };
-    case "rejected":
-      return { container: "bg-red-100", text: "text-red-700" };
-    default:
-      return { container: "bg-secondary", text: "text-muted-foreground" };
-  }
-}
-
-function statusLabel(status: string): string {
-  switch (status.toLowerCase()) {
-    case "approved":
-      return "Disetujui";
-    case "rejected":
-      return "Ditolak";
-    default:
-      return "Menunggu";
-  }
-}
-
-function formatTime(value: string | null | undefined): string {
-  if (!value) return "--:--";
-  return value.slice(0, 5);
-}
-
-function normalizeApiError(error: unknown): string {
-  if (isAxiosError(error)) {
-    const payload = error.response?.data as
-      | {
-          message?: string;
-          errors?: Record<string, string[] | string>;
-        }
-      | undefined;
-
-    if (payload?.errors) {
-      const values = Object.values(payload.errors)
-        .flatMap((value) => (Array.isArray(value) ? value : [value]))
-        .filter(Boolean);
-
-      if (values.length > 0) {
-        return String(values[0]);
-      }
-    }
-
-    if (payload?.message) {
-      return payload.message;
-    }
-  }
-
-  return "Terjadi kesalahan saat mengirim pengajuan";
-}
-
 export default function OvertimeRequestScreen() {
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const createSheetRef = useRef<BottomSheetModal>(null);
-  const createSheetSnapPoints = useMemo(() => ["65%", "82%"], []);
+  const createSheetSnapPoints = useMemo(() => ["75%", "90%"], []);
 
   const [overtimeList, setOvertimeList] = useState<OvertimeItem[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(true);
@@ -99,6 +50,9 @@ export default function OvertimeRequestScreen() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [reason, setReason] = useState("");
+  const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(
+    null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadOvertimes = useCallback(async (isRefresh = false) => {
@@ -145,6 +99,22 @@ export default function OvertimeRequestScreen() {
     setStartTime("");
     setEndTime("");
     setReason("");
+    setSelectedFile(null);
+  };
+
+  const handleSelectFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/*", "application/pdf"],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) return;
+
+      setSelectedFile(result.assets[0]);
+    } catch (error) {
+      Alert.alert("Error", "Gagal memilih file");
+    }
   };
 
   const handleSubmit = async () => {
@@ -160,6 +130,13 @@ export default function OvertimeRequestScreen() {
         start_time: startTime.trim(),
         end_time: endTime.trim(),
         reason: reason.trim(),
+        file: selectedFile
+          ? {
+              uri: selectedFile.uri,
+              name: selectedFile.name,
+              mimeType: selectedFile.mimeType ?? "application/octet-stream",
+            }
+          : null,
       });
 
       createSheetRef.current?.dismiss();
@@ -176,27 +153,7 @@ export default function OvertimeRequestScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={["bottom"]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <LinearGradient
-        colors={["#3b82f6", "#60a5fa", "#93c5fd"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        className="px-4"
-        style={{ paddingTop: insets.top, paddingBottom: 10 }}
-      >
-        <View className="flex-row items-center">
-          <Pressable
-            className="w-9 h-9 rounded-full bg-white/20 items-center justify-center"
-            onPress={() => router.back()}
-            hitSlop={8}
-          >
-            <IconSymbol name="chevron.left" size={20} color="#fff" />
-          </Pressable>
-          <View className="flex-1 items-center">
-            <Text className="text-white text-base font-semibold">Pengajuan Lembur</Text>
-          </View>
-          <View className="w-9 h-9" />
-        </View>
-      </LinearGradient>
+      <ScreenHeader title="Pengajuan Lembur" />
 
       <View className="flex-1 px-4 pt-4">
         <View className="flex-row items-center justify-between">
@@ -237,7 +194,7 @@ export default function OvertimeRequestScreen() {
             )
           }
           renderItem={({ item }) => {
-            const badgeClass = statusBadgeClass(item.status);
+            const badgeClass = getStatusBadgeClasses(item.status);
 
             return (
               <View className="rounded-xl border border-border bg-card p-4">
@@ -245,12 +202,12 @@ export default function OvertimeRequestScreen() {
                   <Text className="font-semibold text-foreground">{item.date}</Text>
                   <View className={`rounded-full px-2.5 py-1 ${badgeClass.container}`}>
                     <Text className={`text-xs font-semibold ${badgeClass.text}`}>
-                      {statusLabel(item.status)}
+                      {getStatusLabel(item.status)}
                     </Text>
                   </View>
                 </View>
                 <Text variant="muted" className="text-sm">
-                  Jam: {formatTime(item.start_time)} - {formatTime(item.end_time)}
+                  Jam: {formatTimeString(item.start_time)} - {formatTimeString(item.end_time)}
                 </Text>
                 <Text variant="muted" className="text-sm mt-1">
                   Alasan: {item.reason}
@@ -354,6 +311,35 @@ export default function OvertimeRequestScreen() {
                   textAlignVertical="top"
                   className="border border-border rounded-lg px-4 py-3 text-foreground bg-background h-28"
                 />
+              </View>
+
+              <View>
+                <Text className="text-sm font-medium text-foreground mb-2">
+                  Lampiran (Opsional)
+                </Text>
+                <Pressable
+                  onPress={handleSelectFile}
+                  className="border border-dashed border-border rounded-lg px-4 py-4 items-center justify-center bg-secondary/50"
+                >
+                  {selectedFile ? (
+                    <View className="items-center">
+                      <IconSymbol name="doc.text.fill" size={24} color="#3b82f6" />
+                      <Text className="text-sm font-medium mt-2 text-center" numberOfLines={1}>
+                        {selectedFile.name}
+                      </Text>
+                      <Text className="text-xs text-muted-foreground mt-1">
+                        Tap untuk ganti
+                      </Text>
+                    </View>
+                  ) : (
+                    <View className="items-center">
+                      <IconSymbol name="plus.circle" size={24} color="#9ca3af" />
+                      <Text className="text-sm text-muted-foreground mt-2">
+                        Pilih File (PDF/Gambar)
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
               </View>
             </View>
 

@@ -2,19 +2,26 @@ import api from '@/services/api';
 import { ApiResponse } from './types';
 
 export interface LeaveRequest {
+  type: string;
   start_date: string;
   end_date: string;
   reason: string;
-  note?: string;
+  file?: {
+    uri: string;
+    name: string;
+    mimeType: string;
+  } | null;
 }
 
 export interface LeaveItem {
   id: number;
+  type: string;
   start_date: string | null;
   end_date: string | null;
   reason: string;
   status: string;
   note?: string | null;
+  attachment?: string | null;
 }
 
 export interface OvertimeRequest {
@@ -22,6 +29,11 @@ export interface OvertimeRequest {
   start_time: string;
   end_time: string;
   reason: string;
+  file?: {
+    uri: string;
+    name: string;
+    mimeType: string;
+  } | null;
 }
 
 export interface OvertimeItem {
@@ -32,15 +44,50 @@ export interface OvertimeItem {
   reason: string;
   status: string;
   note?: string | null;
+  attachment?: string | null;
 }
 
 export const submitLeave = async (data: LeaveRequest) => {
-  const response = await api.post('/api/leaves', data);
+  const formData = new FormData();
+  formData.append('type', data.type);
+  formData.append('start_date', data.start_date);
+  formData.append('end_date', data.end_date);
+  formData.append('reason', data.reason);
+
+  if (data.file) {
+    // @ts-ignore
+    formData.append('file', {
+      uri: data.file.uri,
+      name: data.file.name,
+      type: data.file.mimeType,
+    });
+  }
+
+  const response = await api.post('/api/leaves', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return response.data;
 };
 
 export const submitOvertime = async (data: OvertimeRequest) => {
-  const response = await api.post('/api/overtimes', data);
+  const formData = new FormData();
+  formData.append('date', data.date);
+  formData.append('start_time', data.start_time);
+  formData.append('end_time', data.end_time);
+  formData.append('reason', data.reason);
+
+  if (data.file) {
+    // @ts-ignore
+    formData.append('file', {
+      uri: data.file.uri,
+      name: data.file.name,
+      type: data.file.mimeType,
+    });
+  }
+
+  const response = await api.post('/api/overtimes', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return response.data;
 };
 

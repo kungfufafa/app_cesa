@@ -67,7 +67,15 @@
           "cameraPermission": "Allow Cesa to access your camera to take attendance photos."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.5"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

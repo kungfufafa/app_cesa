@@ -12,3 +12,11 @@ export function getGreeting() {
   if (hour < 18) return "Selamat sore";
   return "Selamat malam";
 }
+
+export function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(amount);
+}

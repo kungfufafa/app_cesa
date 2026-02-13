@@ -48,7 +48,8 @@ export const useLocation = (options: UseLocationOptions = {}) => {
       });
       setLoading(false);
       return true;
-    } catch {
+    } catch (error) {
+      console.error('Error fetching location:', error);
       setErrorMsg('Error fetching location');
       setLoading(false);
       return false;
@@ -87,7 +88,8 @@ export const useLocation = (options: UseLocationOptions = {}) => {
         }
       );
       return true;
-    } catch {
+    } catch (error) {
+      console.error('Error watching location:', error);
       setErrorMsg('Error fetching location');
       setLoading(false);
       return false;

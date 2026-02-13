@@ -17,10 +17,15 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  NativeModules,
   Pressable,
   StatusBar,
   View,
 } from "react-native";
+
+const FaceDetection = NativeModules.FaceDetection
+  ? require("@react-native-ml-kit/face-detection").default
+  : null;
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 dayjs.locale("id");
@@ -75,7 +80,9 @@ export default function FaceCaptureScreen() {
             </Text>
 
             <Button onPress={requestPermission} size="lg" className="w-full">
-              <Text className="text-primary-foreground font-bold">Izinkan Kamera</Text>
+              <Text className="text-primary-foreground font-bold">
+                Izinkan Kamera
+              </Text>
             </Button>
 
             <Pressable onPress={() => router.back()} className="mt-4">
@@ -95,7 +102,7 @@ export default function FaceCaptureScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.5,
+        quality: 0.7,
         skipProcessing: true,
       });
 
@@ -103,7 +110,32 @@ export default function FaceCaptureScreen() {
         throw new Error("Failed to capture photo");
       }
 
-      const currentLocationPermission = await Location.getForegroundPermissionsAsync();
+      let faceCount = 0;
+      if (FaceDetection) {
+        try {
+          const faces = await FaceDetection.detect(photo.uri, {
+            landmarkMode: "none",
+            contourMode: "none",
+            classificationMode: "none",
+            performanceMode: "fast",
+            minFaceSize: 0.15,
+          });
+          faceCount = faces.length;
+        } catch {
+          // ML Kit gagal (device tidak support, dsb) — lanjut saja
+        }
+      }
+
+      if (FaceDetection && faceCount === 0) {
+        Alert.alert(
+          "Wajah Tidak Terdeteksi",
+          "Pastikan wajah Anda terlihat jelas di dalam area oval dan coba lagi.",
+        );
+        return;
+      }
+
+      const currentLocationPermission =
+        await Location.getForegroundPermissionsAsync();
       const locationPermission = currentLocationPermission.granted
         ? currentLocationPermission
         : await Location.requestForegroundPermissionsAsync();
@@ -111,7 +143,7 @@ export default function FaceCaptureScreen() {
       if (!locationPermission.granted) {
         Alert.alert(
           "Izin Diperlukan",
-          "Presensi membutuhkan akses Lokasi. Aktifkan izin lokasi untuk melanjutkan."
+          "Presensi membutuhkan akses Lokasi. Aktifkan izin lokasi untuk melanjutkan.",
         );
         return;
       }
@@ -120,20 +152,30 @@ export default function FaceCaptureScreen() {
         accuracy: Location.Accuracy.High,
       });
 
+      const isMocked =
+        (location.coords as { mocked?: boolean }).mocked === true;
+
       await submitAttendance({
         photoUri: photo.uri,
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
+        isMockLocation: isMocked,
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert("Success", `${title} Successful!`, [
         { text: "OK", onPress: () => router.navigate("/presensi" as never) },
       ]);
-    } catch (error) {
+    } catch (error: any) {
       if (__DEV__) console.warn("submitAttendance failed", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Error", "Failed to submit attendance. Please try again.");
+
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Gagal mengirim presensi. Silakan coba lagi.";
+
+      Alert.alert("Gagal", message);
     } finally {
       setIsSubmitting(false);
     }
@@ -226,7 +268,9 @@ export default function FaceCaptureScreen() {
               {isSubmitting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text className="text-primary-foreground font-bold">Submit Attendance</Text>
+                <Text className="text-primary-foreground font-bold">
+                  Submit Attendance
+                </Text>
               )}
             </Button>
           </CardContent>

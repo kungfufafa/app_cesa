@@ -21,6 +21,7 @@ export type AttendanceSubmission = {
   photoUri: string;
   latitude: number;
   longitude: number;
+  isMockLocation?: boolean;
 };
 
 type AttendanceTodayApiData = {
@@ -113,6 +114,9 @@ export async function submitAttendance(data: AttendanceSubmission): Promise<Subm
   const formData = new FormData();
   formData.append("latitude", String(data.latitude));
   formData.append("longitude", String(data.longitude));
+  if (data.isMockLocation !== undefined) {
+    formData.append("is_mock_location", data.isMockLocation ? "1" : "0");
+  }
 
   const filename = data.photoUri.split("/").pop() || "photo.jpg";
   const match = /\.(\w+)$/.exec(filename);

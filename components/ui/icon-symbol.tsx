@@ -28,6 +28,7 @@ const MAPPING = {
   "person.2.fill": "groups",
   "tray.fill": "inbox",
   plus: "add",
+  "plus.circle": "add-circle",
   "envelope.fill": "email",
   "phone.fill": "phone",
   "message.fill": "message",
@@ -59,6 +60,8 @@ const MAPPING = {
   "info.circle.fill": "info",
   "arrow.clockwise": "refresh",
   "list.bullet": "list",
+  "banknote.fill": "payments",
+  "exclamationmark.triangle.fill": "warning",
 } as const satisfies IconMapping;
 
 export type IconSymbolName = keyof typeof MAPPING;

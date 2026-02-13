@@ -4,12 +4,19 @@ export type ServiceItemConfig = {
   id: string;
   label: string;
   iconName: IconSymbolName;
-  image: any;
+  image?: any;
   url: string;
   color: string;
 };
 
 export const SERVICES: ServiceItemConfig[] = [
+  {
+    id: "payroll",
+    label: "Payroll",
+    iconName: "banknote.fill",
+    url: "/payroll",
+    color: "#3b82f6",
+  },
   {
     id: "dnd",
     label: "DND",
@@ -43,14 +50,6 @@ export const SERVICES: ServiceItemConfig[] = [
     color: "#3b82f6",
   },
   {
-    id: "shelf",
-    label: "Shelf",
-    iconName: "shippingbox.fill",
-    image: require("@/assets/images/icons/shelf.png"),
-    url: "https://shelf.completeselular.com/",
-    color: "#3b82f6",
-  },
-  {
     id: "attendance",
     label: "Attendance",
     iconName: "clock.fill",
@@ -72,6 +71,14 @@ export const SERVICES: ServiceItemConfig[] = [
     iconName: "ellipsis",
     image: require("@/assets/images/icons/more.png"),
     url: "",
+    color: "#3b82f6",
+  },
+  {
+    id: "shelf",
+    label: "Shelf",
+    iconName: "shippingbox.fill",
+    image: require("@/assets/images/icons/shelf.png"),
+    url: "https://shelf.completeselular.com/",
     color: "#3b82f6",
   },
 ];

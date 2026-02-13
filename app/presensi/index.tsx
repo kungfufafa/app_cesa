@@ -26,21 +26,18 @@ import {
   BottomSheetTextInput,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import dayjs from "dayjs";
-import "dayjs/locale/id";
+import dayjs from "@/lib/dates";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-dayjs.locale("id");
 
 export default function PresensiDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
 
-  const currentDate = useMemo(() => dayjs(), []);
+  const currentDate = dayjs();
   const { data: todayData, isLoading: isLoadingToday } = useAttendanceToday();
   const { data: schedule, isLoading: isLoadingSchedule } = useSchedule();
   const { data: history = [], isLoading: isLoadingHistory } = useAttendanceHistory(
