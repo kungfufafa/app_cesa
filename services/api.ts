@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { API_CONFIG } from '@/constants/config';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -10,34 +11,43 @@ if (!API_URL) {
 }
 
 let authToken: string | null | undefined = undefined;
-let tokenLoadPromise: Promise<string | null> | null = null;
+let tokenInitialization: Promise<void> | null = null;
 
 export const setAuthToken = (token: string | null) => {
   authToken = token;
-  tokenLoadPromise = null;
+  tokenInitialization = null;
 };
 
 let onUnauthorized: (() => void) | null = null;
+let isHandling401 = false;
 
 export const setOnUnauthorized = (callback: (() => void) | null) => {
   onUnauthorized = callback;
 };
 
+const ensureTokenLoaded = async () => {
+  if (authToken !== undefined) return;
+
+  if (!tokenInitialization) {
+    tokenInitialization = (async () => {
+      authToken = await SecureStore.getItemAsync('token');
+    })();
+  }
+
+  await tokenInitialization;
+};
+
 const api = axios.create({
   baseURL: API_URL,
+  timeout: API_CONFIG.timeout,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 api.interceptors.request.use(async (config) => {
-  if (authToken === undefined) {
-    if (!tokenLoadPromise) {
-      tokenLoadPromise = SecureStore.getItemAsync('token');
-    }
-    authToken = await tokenLoadPromise;
-    tokenLoadPromise = null;
-  }
+  await ensureTokenLoaded();
+
   if (authToken) {
     config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${authToken}`;
@@ -49,14 +59,21 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
-      authToken = null;
-      try {
-        await SecureStore.deleteItemAsync('token');
-        await SecureStore.deleteItemAsync('user');
-      } catch (e) {
-        if (__DEV__) console.warn('Failed to clear stored auth on 401', e);
+      if (!isHandling401) {
+        isHandling401 = true;
+        authToken = null;
+        try {
+          await SecureStore.deleteItemAsync('token');
+          await SecureStore.deleteItemAsync('user');
+        } catch (e) {
+          if (__DEV__) console.warn('Failed to clear stored auth on 401', e);
+        }
+        onUnauthorized?.();
+        // Reset flag after a delay to prevent rapid-fire handling
+        setTimeout(() => {
+          isHandling401 = false;
+        }, 1000);
       }
-      onUnauthorized?.();
     }
     return Promise.reject(error);
   }

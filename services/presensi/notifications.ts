@@ -1,5 +1,5 @@
 import * as Notifications from "expo-notifications";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dates";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 

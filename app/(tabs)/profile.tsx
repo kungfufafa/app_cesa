@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useAuthBottomSheet } from "@/store/useAuthBottomSheet";
+import { SUPPORT_CONTACT } from "@/constants/config";
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
@@ -52,7 +53,7 @@ export default function ProfileScreen() {
   };
 
   const handleOpenDeveloperWhatsApp = async () => {
-    const whatsappUrl = "https://wa.me/62895636786435";
+    const whatsappUrl = `https://wa.me/${SUPPORT_CONTACT.whatsapp}`;
     try {
       const canOpen = await Linking.canOpenURL(whatsappUrl);
       if (!canOpen) {

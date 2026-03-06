@@ -1,15 +1,12 @@
 import React from "react";
 import { View } from "react-native";
-import dayjs from "dayjs";
-import "dayjs/locale/id";
+import dayjs from "@/lib/dates";
 import { Text } from "@/components/ui/text";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { cn } from "@/lib/utils";
 import { AttendanceRecord } from "@/services/presensi/attendance";
 import { AttendanceStatusBadge } from "./AttendanceStatusBadge";
-
-dayjs.locale("id");
 
 interface AttendanceHistoryCardProps {
   record: AttendanceRecord;

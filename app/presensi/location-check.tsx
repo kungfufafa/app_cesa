@@ -1,14 +1,10 @@
 import { Button } from "@/components/ui/Button";
-import NetInfo from "@react-native-community/netinfo";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Text } from "@/components/ui/text";
 import {
   useAttendanceToday,
   useSchedule,
 } from "@/hooks/presensi/usePresensiQueries";
-import dayjs from "dayjs";
-import "dayjs/locale/id";
-import { Camera } from "expo-camera";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -21,32 +17,9 @@ import MapView, {
   PROVIDER_GOOGLE,
 } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-dayjs.locale("id");
-
-function getDistanceFromLatLonInM(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-) {
-  const R = 6371;
-  const dLat = deg2rad(lat2 - lat1);
-  const dLon = deg2rad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(deg2rad(lat1)) *
-      Math.cos(deg2rad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c;
-  return d * 1000;
-}
-
-function deg2rad(deg: number) {
-  return deg * (Math.PI / 180);
-}
+import { calculateDistance } from "@/lib/geo";
+import { useAttendancePermissions } from "@/hooks/useAttendancePermissions";
+import { fetchNetInfo } from "@/lib/netinfo";
 
 const isOfflineState = (
   isConnected: boolean | null,
@@ -63,8 +36,8 @@ export default function LocationCheckScreen() {
 
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
-  const [isCheckingPermissions, setIsCheckingPermissions] = useState(false);
   const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
+  const { ensurePermissions: ensureAttendancePermissions, isChecking: isCheckingPermissions } = useAttendancePermissions();
   const [showRefreshSuccess, setShowRefreshSuccess] = useState(false);
   const refreshBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -91,9 +64,8 @@ export default function LocationCheckScreen() {
   useEffect(() => {
     let isMounted = true;
     let subscription: Location.LocationSubscription | null = null;
-    let didCleanup = false;
 
-    (async () => {
+    const setupLocation = async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted" || !isMounted) {
@@ -124,28 +96,34 @@ export default function LocationCheckScreen() {
           }
         );
 
-        if (didCleanup) {
+        if (!isMounted) {
+          // Component unmounted while we were setting up - clean up immediately
           sub.remove();
-        } else {
-          subscription = sub;
+          return;
         }
-      } catch (e) {
+
+        subscription = sub;
+      } catch {
         if (isMounted) {
           Alert.alert("Error", "Gagal mendapatkan lokasi. Pastikan GPS aktif.");
         }
       }
-    })();
+    };
+
+    setupLocation();
 
     return () => {
       isMounted = false;
-      didCleanup = true;
-      subscription?.remove();
+      if (subscription) {
+        subscription.remove();
+        subscription = null;
+      }
     };
   }, []);
 
   useEffect(() => {
     if (location && schedule?.office) {
-      const dist = getDistanceFromLatLonInM(
+      const dist = calculateDistance(
         location.coords.latitude,
         location.coords.longitude,
         schedule.office.latitude,
@@ -165,42 +143,8 @@ export default function LocationCheckScreen() {
     return distance <= schedule.office.radius;
   }, [distance, schedule]);
 
-  const ensureAttendancePermissions = async () => {
-    try {
-      setIsCheckingPermissions(true);
-
-      const currentCameraPermission = await Camera.getCameraPermissionsAsync();
-      const cameraPermission = currentCameraPermission.granted
-        ? currentCameraPermission
-        : await Camera.requestCameraPermissionsAsync();
-
-      const currentLocationPermission =
-        await Location.getForegroundPermissionsAsync();
-      const locationPermission = currentLocationPermission.granted
-        ? currentLocationPermission
-        : await Location.requestForegroundPermissionsAsync();
-
-      const hasAllPermissions =
-        cameraPermission.granted && locationPermission.granted;
-
-      if (!hasAllPermissions) {
-        Alert.alert(
-          "Izin Diperlukan",
-          "Presensi membutuhkan akses Kamera dan Lokasi. Aktifkan keduanya untuk melanjutkan."
-        );
-      }
-
-      return hasAllPermissions;
-    } catch {
-      Alert.alert("Error", "Gagal memeriksa izin perangkat. Coba lagi.");
-      return false;
-    } finally {
-      setIsCheckingPermissions(false);
-    }
-  };
-
   const handleNext = async () => {
-    const netState = await NetInfo.fetch();
+    const netState = await fetchNetInfo();
     if (isOfflineState(netState.isConnected, netState.isInternetReachable)) {
       Alert.alert(
         "Koneksi Internet Diperlukan",

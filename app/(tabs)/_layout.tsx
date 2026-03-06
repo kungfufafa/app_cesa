@@ -75,7 +75,7 @@ export default function TabLayout() {
         options={{
           title: "Inbox",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="tray.fill" color={color} />
+            <IconSymbol size={28} name="envelope.fill" color={color} />
           ),
         }}
       />

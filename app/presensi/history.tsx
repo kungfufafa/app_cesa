@@ -9,16 +9,13 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import dayjs from "dayjs";
-import "dayjs/locale/id";
+import dayjs from "@/lib/dates";
 import { Text } from "@/components/ui/text";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAttendanceHistory } from "@/hooks/presensi/usePresensiQueries";
 import { AttendanceRecord } from "@/services/presensi/attendance";
 import { AttendanceHistoryCard } from "@/components/features/presensi";
-
-dayjs.locale("id");
 
 export default function AttendanceHistoryScreen() {
   const router = useRouter();

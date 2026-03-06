@@ -40,6 +40,14 @@ const MENU_ITEMS: MenuItem[] = [
     color: "#3b82f6",
     route: "/form-transfer",
   },
+  {
+    id: "man-power",
+    title: "Man Power",
+    icon: "briefcase.fill",
+    description: "Request man power",
+    color: "#10b981",
+    url: "https://cesa.completeselular.com/request-man-powers",
+  },
 ];
 
 export function RequestBottomSheet() {

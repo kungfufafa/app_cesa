@@ -81,4 +81,11 @@ export const SERVICES: ServiceItemConfig[] = [
     url: "https://shelf.completeselular.com/",
     color: "#3b82f6",
   },
+  {
+    id: "man-power",
+    label: "Man Power",
+    iconName: "briefcase.fill",
+    url: "https://cesa.completeselular.com/request-man-powers",
+    color: "#3b82f6",
+  },
 ];

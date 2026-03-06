@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import axios from 'axios';
-import NetInfo from '@react-native-community/netinfo';
 import * as SecureStore from 'expo-secure-store';
 import { setAuthToken, setOnUnauthorized } from '../services/api';
 import { login, LoginCredentials, AuthResponse, getMe, logout } from '../services/auth';
+import { fetchNetInfo } from '../lib/netinfo';
 
 const extractTokenString = (token: AuthResponse['token']): string | null => {
   if (typeof token === 'string' && token.length > 0) {
@@ -214,7 +214,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
   signIn: async (credentials) => {
     try {
-      const netState = await NetInfo.fetch();
+      const netState = await fetchNetInfo();
       if (isOfflineState(netState.isConnected, netState.isInternetReachable)) {
         return {
           ok: false,
@@ -266,7 +266,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       setAuthToken(storedToken);
-      const netState = await NetInfo.fetch();
+      const netState = await fetchNetInfo();
       if (isOfflineState(netState.isConnected, netState.isInternetReachable)) {
         const cachedUser = await readCachedUser();
         if (!cachedUser) {
@@ -292,12 +292,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (isNetworkError(e)) {
-        if (!storedToken) {
+        const cachedUser = await readCachedUser();
+        if (storedToken && cachedUser) {
+          // Offline mode: use cached data
+          set({ token: storedToken, user: cachedUser, isAuthenticated: true, isLoading: false });
+        } else if (!storedToken) {
+          // No token at all - clear everything
           await clearStoredAuth();
           set({ token: null, user: null, isAuthenticated: false, isLoading: false });
-          return;
+        } else {
+          // Have token but no cached user - clear everything
+          await clearStoredAuth();
+          set({ token: null, user: null, isAuthenticated: false, isLoading: false });
         }
-        set({ token: storedToken, user: null, isAuthenticated: false, isLoading: false });
         return;
       }
 

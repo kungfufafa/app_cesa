@@ -7,10 +7,7 @@ import { Text } from '@/components/ui/text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { usePayrollDetail } from '@/hooks/payroll/usePayrollQueries';
 import { formatCurrency } from '@/lib/utils';
-import dayjs from 'dayjs';
-import 'dayjs/locale/id';
-
-dayjs.locale('id');
+import dayjs from '@/lib/dates';
 
 export default function PayrollDetailScreen() {
   const router = useRouter();

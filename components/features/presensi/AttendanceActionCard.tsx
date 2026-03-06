@@ -8,11 +8,10 @@ import {
     AttendanceTodayResponse,
     ScheduleResponse,
 } from "@/services/presensi/attendance";
-import { Camera } from "expo-camera";
-import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
 import { Alert, View } from "react-native";
+import { useAttendancePermissions } from "@/hooks/useAttendancePermissions";
 
 interface AttendanceActionCardProps {
     schedule: ScheduleResponse | null;
@@ -30,39 +29,7 @@ export function AttendanceActionCard({
     className,
 }: AttendanceActionCardProps) {
     const router = useRouter();
-    const [isCheckingPermissions, setIsCheckingPermissions] = useState(false);
-
-    const ensureAttendancePermissions = async () => {
-        try {
-            setIsCheckingPermissions(true);
-
-            const currentCameraPermission = await Camera.getCameraPermissionsAsync();
-            const cameraPermission = currentCameraPermission.granted
-                ? currentCameraPermission
-                : await Camera.requestCameraPermissionsAsync();
-
-            const currentLocationPermission = await Location.getForegroundPermissionsAsync();
-            const locationPermission = currentLocationPermission.granted
-                ? currentLocationPermission
-                : await Location.requestForegroundPermissionsAsync();
-
-            const hasAllPermissions = cameraPermission.granted && locationPermission.granted;
-
-            if (!hasAllPermissions) {
-                Alert.alert(
-                    "Izin Diperlukan",
-                    "Presensi membutuhkan akses Kamera dan Lokasi. Aktifkan keduanya untuk melanjutkan Masuk/Pulang."
-                );
-            }
-
-            return hasAllPermissions;
-        } catch {
-            Alert.alert("Error", "Gagal memeriksa izin perangkat. Coba lagi.");
-            return false;
-        } finally {
-            setIsCheckingPermissions(false);
-        }
-    };
+    const { ensurePermissions, isChecking: isCheckingPermissions } = useAttendancePermissions();
 
     if (isLoading) {
         return (
@@ -83,7 +50,7 @@ export function AttendanceActionCard({
     }
 
     const handleClockIn = async () => {
-        const hasAllPermissions = await ensureAttendancePermissions();
+        const hasAllPermissions = await ensurePermissions();
         if (!hasAllPermissions) return;
 
         router.push({
@@ -106,7 +73,7 @@ export function AttendanceActionCard({
             return;
         }
 
-        const hasAllPermissions = await ensureAttendancePermissions();
+        const hasAllPermissions = await ensurePermissions();
         if (!hasAllPermissions) return;
 
         router.push({

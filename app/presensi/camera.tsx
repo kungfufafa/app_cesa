@@ -5,8 +5,7 @@ import { Text } from "@/components/ui/text";
 import { submitAttendance } from "@/services/presensi/attendance";
 import { useSchedule } from "@/hooks/presensi/usePresensiQueries";
 import { Ionicons } from "@expo/vector-icons";
-import dayjs from "dayjs";
-import "dayjs/locale/id";
+import dayjs from "@/lib/dates";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -27,8 +26,6 @@ const FaceDetection = NativeModules.FaceDetection
   ? require("@react-native-ml-kit/face-detection").default
   : null;
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-dayjs.locale("id");
 
 const { width } = Dimensions.get("window");
 
@@ -131,6 +128,7 @@ export default function FaceCaptureScreen() {
           "Wajah Tidak Terdeteksi",
           "Pastikan wajah Anda terlihat jelas di dalam area oval dan coba lagi.",
         );
+        setIsSubmitting(false);
         return;
       }
 
@@ -145,6 +143,7 @@ export default function FaceCaptureScreen() {
           "Izin Diperlukan",
           "Presensi membutuhkan akses Lokasi. Aktifkan izin lokasi untuk melanjutkan.",
         );
+        setIsSubmitting(false);
         return;
       }
 
@@ -154,6 +153,21 @@ export default function FaceCaptureScreen() {
 
       const isMocked =
         (location.coords as { mocked?: boolean }).mocked === true;
+
+      // Validate location data
+      if (!Number.isFinite(location.coords.latitude) ||
+          !Number.isFinite(location.coords.longitude)) {
+        Alert.alert("Error", "Lokasi tidak valid. Coba lagi.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate photo
+      if (!photo.uri || photo.uri.length === 0) {
+        Alert.alert("Error", "Foto tidak valid. Coba lagi.");
+        setIsSubmitting(false);
+        return;
+      }
 
       await submitAttendance({
         photoUri: photo.uri,
@@ -167,7 +181,7 @@ export default function FaceCaptureScreen() {
         { text: "OK", onPress: () => router.navigate("/presensi" as never) },
       ]);
     } catch (error: any) {
-      if (__DEV__) console.warn("submitAttendance failed", error);
+      if (__DEV__) console.warn("Submission failed", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       const message =
