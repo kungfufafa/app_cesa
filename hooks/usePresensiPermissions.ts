@@ -1,13 +1,13 @@
 /**
- * Centralized attendance permissions hook
- * Handles camera and location permission checks for attendance features
+ * Centralized presensi permissions hook
+ * Handles camera and location permission checks for presensi features
  */
 import { useState, useCallback } from "react";
 import { Alert } from "react-native";
 import { Camera } from "expo-camera";
 import * as Location from "expo-location";
 
-export interface UseAttendancePermissionsResult {
+export interface UsePresensiPermissionsResult {
   /** Check and request camera + location permissions */
   ensurePermissions: () => Promise<boolean>;
   /** Whether permissions are currently being checked */
@@ -15,10 +15,10 @@ export interface UseAttendancePermissionsResult {
 }
 
 /**
- * Hook to manage attendance-related permissions (camera + location)
+ * Hook to manage presensi-related permissions (camera + location)
  * @returns Permission state and check function
  */
-export function useAttendancePermissions(): UseAttendancePermissionsResult {
+export function usePresensiPermissions(): UsePresensiPermissionsResult {
   const [isChecking, setIsChecking] = useState(false);
 
   const ensurePermissions = useCallback(async (): Promise<boolean> => {
@@ -50,7 +50,7 @@ export function useAttendancePermissions(): UseAttendancePermissionsResult {
 
       return hasAllPermissions;
     } catch {
-      Alert.alert("Error", "Gagal memeriksa izin perangkat. Coba lagi.");
+      Alert.alert("Kesalahan", "Gagal memeriksa izin perangkat. Coba lagi.");
       return false;
     } finally {
       setIsChecking(false);

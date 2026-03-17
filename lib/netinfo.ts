@@ -70,6 +70,11 @@ export const fetchNetInfo = async (): Promise<NetInfoState> => {
   }
 };
 
+export const isOfflineState = (
+  isConnected: boolean | null,
+  isInternetReachable: boolean | null
+) => isConnected === false || isInternetReachable === false;
+
 export const useSafeNetInfo = (): NetInfoState => {
   const [state, setState] = useState<NetInfoState>(ONLINE_FALLBACK);
 

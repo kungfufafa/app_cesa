@@ -13,16 +13,16 @@ import dayjs from "@/lib/dates";
 import { Text } from "@/components/ui/text";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useAttendanceHistory } from "@/hooks/presensi/usePresensiQueries";
-import { AttendanceRecord } from "@/services/presensi/attendance";
-import { AttendanceHistoryCard } from "@/components/features/presensi";
+import { useRiwayatPresensi } from "@/hooks/presensi/usePresensiQueries";
+import { PresensiRecord } from "@/services/presensi/presensi";
+import { PresensiHistoryCard } from "@/components/features/presensi";
 
-export default function AttendanceHistoryScreen() {
+export default function RiwayatPresensiScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [currentDate, setCurrentDate] = useState(dayjs());
 
-  const { data: history = [], isLoading: isLoadingHistory } = useAttendanceHistory(
+  const { data: history = [], isLoading: isLoadingHistory } = useRiwayatPresensi(
     currentDate.month() + 1,
     currentDate.year()
   );
@@ -31,8 +31,8 @@ export default function AttendanceHistoryScreen() {
     setCurrentDate(currentDate.subtract(1, "month"));
   const handleNextMonth = () => setCurrentDate(currentDate.add(1, "month"));
 
-  const renderItem = ({ item }: { item: AttendanceRecord }) => (
-    <AttendanceHistoryCard record={item} />
+  const renderItem = ({ item }: { item: PresensiRecord }) => (
+    <PresensiHistoryCard record={item} />
   );
 
   return (
@@ -53,7 +53,7 @@ export default function AttendanceHistoryScreen() {
             <IconSymbol name="chevron.left" size={20} color="#fff" />
           </Pressable>
           <View className="flex-1 items-center">
-            <Text className="text-white text-base font-semibold">Riwayat Absensi</Text>
+            <Text className="text-white text-base font-semibold">Riwayat Presensi</Text>
           </View>
           <View className="w-9 h-9" />
         </View>
@@ -100,7 +100,7 @@ export default function AttendanceHistoryScreen() {
               </View>
               <Text className="font-medium">Belum ada riwayat</Text>
               <Text variant="muted" className="text-center mt-1 px-10">
-                Tidak ada data absensi untuk bulan{" "}
+                Tidak ada data presensi untuk bulan{" "}
                 {currentDate.format("MMMM YYYY")}
               </Text>
             </View>

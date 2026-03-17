@@ -2,8 +2,9 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Text } from "@/components/ui/text";
-import { submitAttendance } from "@/services/presensi/attendance";
+import { submitPresensi } from "@/services/presensi/presensi";
 import { useSchedule } from "@/hooks/presensi/usePresensiQueries";
+import { normalizeApiError } from "@/lib/api-errors";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "@/lib/dates";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -21,10 +22,6 @@ import {
   StatusBar,
   View,
 } from "react-native";
-
-const FaceDetection = NativeModules.FaceDetection
-  ? require("@react-native-ml-kit/face-detection").default
-  : null;
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
@@ -35,6 +32,57 @@ const ABSOLUTE_FILL = {
   right: 0,
   bottom: 0,
   left: 0,
+};
+
+const detectFaceCount = async (photoUri: string): Promise<number | null> => {
+  if (!NativeModules.FaceDetection) {
+    return null;
+  }
+
+  try {
+    const { default: FaceDetection } = await import(
+      "@react-native-ml-kit/face-detection"
+    );
+    const faces = await FaceDetection.detect(photoUri, {
+      landmarkMode: "none",
+      contourMode: "none",
+      classificationMode: "none",
+      performanceMode: "fast",
+      minFaceSize: 0.15,
+    });
+
+    return faces.length;
+  } catch {
+    return null;
+  }
+};
+
+const getPresensiLocation = async () => {
+  const currentPermission = await Location.getForegroundPermissionsAsync();
+  const permission = currentPermission.granted
+    ? currentPermission
+    : await Location.requestForegroundPermissionsAsync();
+
+  if (!permission.granted) {
+    return null;
+  }
+
+  const location = await Location.getCurrentPositionAsync({
+    accuracy: Location.Accuracy.High,
+  });
+
+  if (
+    !Number.isFinite(location.coords.latitude) ||
+    !Number.isFinite(location.coords.longitude)
+  ) {
+    throw new Error("Lokasi tidak valid.");
+  }
+
+  return {
+    latitude: location.coords.latitude,
+    longitude: location.coords.longitude,
+    isMockLocation: (location.coords as { mocked?: boolean }).mocked === true,
+  };
 };
 
 export default function FaceCaptureScreen() {
@@ -104,26 +152,11 @@ export default function FaceCaptureScreen() {
       });
 
       if (!photo?.uri) {
-        throw new Error("Failed to capture photo");
+        throw new Error("Gagal mengambil foto");
       }
 
-      let faceCount = 0;
-      if (FaceDetection) {
-        try {
-          const faces = await FaceDetection.detect(photo.uri, {
-            landmarkMode: "none",
-            contourMode: "none",
-            classificationMode: "none",
-            performanceMode: "fast",
-            minFaceSize: 0.15,
-          });
-          faceCount = faces.length;
-        } catch {
-          // ML Kit gagal (device tidak support, dsb) — lanjut saja
-        }
-      }
-
-      if (FaceDetection && faceCount === 0) {
+      const faceCount = await detectFaceCount(photo.uri);
+      if (faceCount === 0) {
         Alert.alert(
           "Wajah Tidak Terdeteksi",
           "Pastikan wajah Anda terlihat jelas di dalam area oval dan coba lagi.",
@@ -132,13 +165,8 @@ export default function FaceCaptureScreen() {
         return;
       }
 
-      const currentLocationPermission =
-        await Location.getForegroundPermissionsAsync();
-      const locationPermission = currentLocationPermission.granted
-        ? currentLocationPermission
-        : await Location.requestForegroundPermissionsAsync();
-
-      if (!locationPermission.granted) {
+      const location = await getPresensiLocation();
+      if (!location) {
         Alert.alert(
           "Izin Diperlukan",
           "Presensi membutuhkan akses Lokasi. Aktifkan izin lokasi untuk melanjutkan.",
@@ -147,49 +175,21 @@ export default function FaceCaptureScreen() {
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      const isMocked =
-        (location.coords as { mocked?: boolean }).mocked === true;
-
-      // Validate location data
-      if (!Number.isFinite(location.coords.latitude) ||
-          !Number.isFinite(location.coords.longitude)) {
-        Alert.alert("Error", "Lokasi tidak valid. Coba lagi.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Validate photo
-      if (!photo.uri || photo.uri.length === 0) {
-        Alert.alert("Error", "Foto tidak valid. Coba lagi.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      await submitAttendance({
+      await submitPresensi({
         photoUri: photo.uri,
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        isMockLocation: isMocked,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        isMockLocation: location.isMockLocation,
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Success", `${title} Successful!`, [
+      Alert.alert("Berhasil", `Presensi ${title.toLowerCase()} berhasil dikirim.`, [
         { text: "OK", onPress: () => router.navigate("/presensi" as never) },
       ]);
-    } catch (error: any) {
-      if (__DEV__) console.warn("Submission failed", error);
+    } catch (error) {
+      if (__DEV__) console.warn("Gagal mengirim presensi", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Gagal mengirim presensi. Silakan coba lagi.";
-
-      Alert.alert("Gagal", message);
+      Alert.alert("Gagal", normalizeApiError(error, "Gagal mengirim presensi. Silakan coba lagi."));
     } finally {
       setIsSubmitting(false);
     }
@@ -250,7 +250,7 @@ export default function FaceCaptureScreen() {
 
           <View className="items-center">
             <Text className="text-white text-base font-semibold">{title}</Text>
-            <Text className="text-white/80 text-xs">Step 2 of 2</Text>
+            <Text className="text-white/80 text-xs">Langkah 2 dari 2</Text>
           </View>
 
           <View className="w-9 h-9" />
@@ -283,7 +283,7 @@ export default function FaceCaptureScreen() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text className="text-primary-foreground font-bold">
-                  Submit Attendance
+                  Kirim Presensi
                 </Text>
               )}
             </Button>

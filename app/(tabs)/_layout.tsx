@@ -2,6 +2,7 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -25,7 +26,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Beranda",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="house.fill" color={color} />
           ),
@@ -35,7 +36,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="employee"
         options={{
-          title: "Employee",
+          title: "Karyawan",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="person.2.fill" color={color} />
           ),
@@ -45,16 +46,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="request"
         options={{
-          title: "Request",
-          tabBarButton: (props: any) => (
+          title: "Pengajuan",
+          tabBarButton: ({ style }: BottomTabBarButtonProps) => (
             <TouchableOpacity
-              {...props}
               className="justify-center items-center -top-5"
-              style={props.style as any}
-              onPress={(e: any) => {
-                e.preventDefault();
-                openRequestSheet();
-              }}
+              style={style}
+              onPress={() => openRequestSheet()}
             >
               <LinearGradient
                 colors={PRIMARY_GRADIENT}
@@ -73,7 +70,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="inbox"
         options={{
-          title: "Inbox",
+          title: "Kotak Masuk",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="envelope.fill" color={color} />
           ),
@@ -83,7 +80,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
+          title: "Profil",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="person.fill" color={color} />
           ),

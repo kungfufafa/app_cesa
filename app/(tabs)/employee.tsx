@@ -21,7 +21,7 @@ export default function EmployeeScreen() {
             <IconSymbol name="person.2.fill" size={32} color="#71717a" />
           </View>
           <Text variant="h3" className="mb-2">
-            Employee Directory
+            Direktori Karyawan
           </Text>
           <Text variant="muted" className="text-center mb-6">
             Login untuk melihat data karyawan

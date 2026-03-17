@@ -1,33 +1,33 @@
 import * as Notifications from "expo-notifications";
 import dayjs from "@/lib/dates";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "@/lib/secure-storage";
 import { Platform } from "react-native";
 
 import {
-  AttendanceTodayResponse,
+  PresensiHariIniResponse,
   ScheduleResponse,
-} from "@/services/presensi/attendance";
+} from "@/services/presensi/presensi";
 
-const ATTENDANCE_REMINDER_CHANNEL_ID = "attendance-reminders";
-const ATTENDANCE_REMINDER_SOURCE = "attendance-reminder";
-const ATTENDANCE_REMINDER_MINUTES_STORAGE_KEY =
+const PRESENSI_REMINDER_CHANNEL_ID = "attendance-reminders";
+const PRESENSI_REMINDER_SOURCE = "attendance-reminder";
+const PRESENSI_REMINDER_MINUTES_STORAGE_KEY =
   "attendance_reminder_minutes_before";
 
-export const ATTENDANCE_REMINDER_MINUTES_BEFORE = 15;
-export const ATTENDANCE_REMINDER_MINUTES_MIN = 1;
-export const ATTENDANCE_REMINDER_MINUTES_MAX = 180;
+export const PRESENSI_REMINDER_MINUTES_BEFORE = 15;
+export const PRESENSI_REMINDER_MINUTES_MIN = 1;
+export const PRESENSI_REMINDER_MINUTES_MAX = 180;
 
 let notificationHandlerInitialized = false;
 
 function normalizeReminderMinutes(value: number): number {
   if (!Number.isFinite(value)) {
-    return ATTENDANCE_REMINDER_MINUTES_BEFORE;
+    return PRESENSI_REMINDER_MINUTES_BEFORE;
   }
 
   const rounded = Math.round(value);
   return Math.max(
-    ATTENDANCE_REMINDER_MINUTES_MIN,
-    Math.min(ATTENDANCE_REMINDER_MINUTES_MAX, rounded)
+    PRESENSI_REMINDER_MINUTES_MIN,
+    Math.min(PRESENSI_REMINDER_MINUTES_MAX, rounded)
   );
 }
 
@@ -73,11 +73,11 @@ function buildTriggerDate(
   return triggerDate.toDate();
 }
 
-function isAttendanceReminder(
+function isPresensiReminder(
   item: Notifications.NotificationRequest
 ): boolean {
   const source = item.content.data?.source;
-  return source === ATTENDANCE_REMINDER_SOURCE;
+  return source === PRESENSI_REMINDER_SOURCE;
 }
 
 export function initializeNotificationHandler() {
@@ -97,11 +97,11 @@ export function initializeNotificationHandler() {
 
 export async function getReminderMinutesBefore(): Promise<number> {
   const rawValue = await SecureStore.getItemAsync(
-    ATTENDANCE_REMINDER_MINUTES_STORAGE_KEY
+    PRESENSI_REMINDER_MINUTES_STORAGE_KEY
   );
 
   if (!rawValue) {
-    return ATTENDANCE_REMINDER_MINUTES_BEFORE;
+    return PRESENSI_REMINDER_MINUTES_BEFORE;
   }
 
   const parsed = Number(rawValue);
@@ -109,7 +109,7 @@ export async function getReminderMinutesBefore(): Promise<number> {
 
   if (String(normalized) !== rawValue) {
     await SecureStore.setItemAsync(
-      ATTENDANCE_REMINDER_MINUTES_STORAGE_KEY,
+      PRESENSI_REMINDER_MINUTES_STORAGE_KEY,
       String(normalized)
     );
   }
@@ -122,16 +122,16 @@ export async function setReminderMinutesBefore(
 ): Promise<number> {
   const normalized = normalizeReminderMinutes(minutesBefore);
   await SecureStore.setItemAsync(
-    ATTENDANCE_REMINDER_MINUTES_STORAGE_KEY,
+    PRESENSI_REMINDER_MINUTES_STORAGE_KEY,
     String(normalized)
   );
   return normalized;
 }
 
-export async function ensureNotificationChannel() {
+async function ensureNotificationChannel() {
   if (Platform.OS !== "android") return;
 
-  await Notifications.setNotificationChannelAsync(ATTENDANCE_REMINDER_CHANNEL_ID, {
+  await Notifications.setNotificationChannelAsync(PRESENSI_REMINDER_CHANNEL_ID, {
     name: "Pengingat Presensi",
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 150, 250],
@@ -141,7 +141,7 @@ export async function ensureNotificationChannel() {
   });
 }
 
-export async function ensureNotificationPermissions() {
+async function ensureNotificationPermissions() {
   const existingPermission = await Notifications.getPermissionsAsync();
   if (hasGrantedNotificationPermission(existingPermission)) {
     return true;
@@ -151,9 +151,9 @@ export async function ensureNotificationPermissions() {
   return hasGrantedNotificationPermission(requestedPermission);
 }
 
-async function cancelExistingAttendanceReminders() {
+async function cancelExistingPresensiReminders() {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  const reminders = scheduled.filter(isAttendanceReminder);
+  const reminders = scheduled.filter(isPresensiReminder);
 
   await Promise.all(
     reminders.map((item) =>
@@ -174,7 +174,7 @@ async function scheduleReminder(params: {
       body: params.body,
       sound: "default",
       data: {
-        source: ATTENDANCE_REMINDER_SOURCE,
+        source: PRESENSI_REMINDER_SOURCE,
         reminderType: params.reminderType,
       },
     },
@@ -183,16 +183,16 @@ async function scheduleReminder(params: {
       date: params.triggerDate,
       channelId:
         Platform.OS === "android"
-          ? ATTENDANCE_REMINDER_CHANNEL_ID
+          ? PRESENSI_REMINDER_CHANNEL_ID
           : undefined,
     },
   });
 }
 
-export async function syncAttendanceReminderNotifications(
+export async function syncPresensiReminderNotifications(
   schedule: ScheduleResponse,
-  todayAttendance: AttendanceTodayResponse | null,
-  minutesBefore = ATTENDANCE_REMINDER_MINUTES_BEFORE
+  presensiHariIni: PresensiHariIniResponse | null,
+  minutesBefore = PRESENSI_REMINDER_MINUTES_BEFORE
 ): Promise<{ permissionGranted: boolean; scheduledCount: number }> {
   initializeNotificationHandler();
   await ensureNotificationChannel();
@@ -202,11 +202,11 @@ export async function syncAttendanceReminderNotifications(
     return { permissionGranted: false, scheduledCount: 0 };
   }
 
-  await cancelExistingAttendanceReminders();
+  await cancelExistingPresensiReminders();
 
   const reminders: Array<Promise<void>> = [];
 
-  if (!todayAttendance?.check_in_time) {
+  if (!presensiHariIni?.check_in_time) {
     const triggerMasuk = buildTriggerDate(
       schedule.shift.start_time,
       minutesBefore
@@ -224,7 +224,7 @@ export async function syncAttendanceReminderNotifications(
     }
   }
 
-  if (!todayAttendance?.check_out_time) {
+  if (!presensiHariIni?.check_out_time) {
     const triggerPulang = buildTriggerDate(
       schedule.shift.end_time,
       minutesBefore

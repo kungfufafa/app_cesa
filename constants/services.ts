@@ -4,7 +4,7 @@ export type ServiceItemConfig = {
   id: string;
   label: string;
   iconName: IconSymbolName;
-  image?: any;
+  image?: number;
   url: string;
   color: string;
 };
@@ -38,7 +38,7 @@ export const SERVICES: ServiceItemConfig[] = [
     label: "Helpdesk",
     iconName: "headphones",
     image: require("@/assets/images/icons/helpdesk.png"),
-    url: "https://helpdesk.completeselular.com",
+    url: "/inbox",
     color: "#3b82f6",
   },
   {
@@ -50,8 +50,8 @@ export const SERVICES: ServiceItemConfig[] = [
     color: "#3b82f6",
   },
   {
-    id: "attendance",
-    label: "Attendance",
+    id: "presensi",
+    label: "Presensi",
     iconName: "clock.fill",
     image: require("@/assets/images/icons/attendance.png"),
     url: "/presensi",

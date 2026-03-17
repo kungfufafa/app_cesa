@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { setAuthToken, setOnUnauthorized } from '../services/api';
-import { login, LoginCredentials, AuthResponse, getMe, logout } from '../services/auth';
-import { fetchNetInfo } from '../lib/netinfo';
+import { login, LoginCredentials, AuthResponse, logout } from '../services/auth';
+import * as SecureStore from '../lib/secure-storage';
 
 const extractTokenString = (token: AuthResponse['token']): string | null => {
   if (typeof token === 'string' && token.length > 0) {
@@ -27,20 +26,13 @@ const extractTokenString = (token: AuthResponse['token']): string | null => {
   return null;
 };
 
-const isOfflineState = (isConnected: boolean | null, isInternetReachable: boolean | null) =>
-  isConnected === false || isInternetReachable === false;
-
-const isUnauthorized = (error: unknown) =>
-  axios.isAxiosError(error) &&
-  (error.response?.status === 401 || error.response?.status === 403);
-
-const isNetworkError = (error: unknown) =>
-  axios.isAxiosError(error) && !error.response;
-
 const isServerError = (error: unknown) =>
   axios.isAxiosError(error) &&
   typeof error.response?.status === 'number' &&
   error.response.status >= 500;
+
+const isNetworkError = (error: unknown) =>
+  axios.isAxiosError(error) && !error.response;
 
 type ApiErrorPayload = {
   message?: string;
@@ -182,7 +174,12 @@ const logAuthError = (error: unknown, authError: AuthError) => {
 };
 
 const readCachedUser = async () => {
-  const raw = await SecureStore.getItemAsync('user');
+  let raw: string | null = null;
+  try {
+    raw = await SecureStore.getItemAsync('user');
+  } catch {
+    return null;
+  }
   if (!raw) return null;
   try {
     return JSON.parse(raw) as AuthResponse['user'];
@@ -192,8 +189,14 @@ const readCachedUser = async () => {
 };
 
 const clearStoredAuth = async () => {
-  await SecureStore.deleteItemAsync('token');
-  await SecureStore.deleteItemAsync('user');
+  try {
+    await SecureStore.deleteItemAsync('token');
+  } catch {}
+
+  try {
+    await SecureStore.deleteItemAsync('user');
+  } catch {}
+
   setAuthToken(null);
 };
 
@@ -207,21 +210,13 @@ interface AuthState {
   restoreSession: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   user: null,
   isAuthenticated: false,
   isLoading: true,
   signIn: async (credentials) => {
     try {
-      const netState = await fetchNetInfo();
-      if (isOfflineState(netState.isConnected, netState.isInternetReachable)) {
-        return {
-          ok: false,
-          error: { type: 'network', message: 'Tidak bisa terhubung ke server. Coba lagi.' },
-        };
-      }
-
       const response = await login(credentials);
       const token = extractTokenString(response.token);
       if (!token) {
@@ -249,77 +244,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       if (__DEV__) console.warn('Logout request failed', error);
     } finally {
-      await SecureStore.deleteItemAsync('token');
-      await SecureStore.deleteItemAsync('user');
-      setAuthToken(null);
+      await clearStoredAuth();
       set({ token: null, user: null, isAuthenticated: false });
     }
   },
   restoreSession: async () => {
-    let storedToken: string | null = null;
     try {
-      storedToken = await SecureStore.getItemAsync('token');
-      if (!storedToken) {
+      const [storedToken, cachedUser] = await Promise.all([
+        SecureStore.getItemAsync('token'),
+        readCachedUser(),
+      ]);
+
+      if (!storedToken || !cachedUser) {
         await clearStoredAuth();
         set({ token: null, user: null, isAuthenticated: false, isLoading: false });
         return;
       }
 
       setAuthToken(storedToken);
-      const netState = await fetchNetInfo();
-      if (isOfflineState(netState.isConnected, netState.isInternetReachable)) {
-        const cachedUser = await readCachedUser();
-        if (!cachedUser) {
-          set({ token: storedToken, user: null, isAuthenticated: false, isLoading: false });
-          return;
-        }
-        set({ token: storedToken, user: cachedUser, isAuthenticated: true, isLoading: false });
-        return;
-      }
-
-      const user = await getMe();
-      if (!user) {
-        set({ token: storedToken, user: null, isAuthenticated: false, isLoading: false });
-        return;
-      }
-      await SecureStore.setItemAsync('user', JSON.stringify(user));
-      set({ token: storedToken, user, isAuthenticated: true, isLoading: false });
+      set({ token: storedToken, user: cachedUser, isAuthenticated: true, isLoading: false });
     } catch (e) {
-      if (isUnauthorized(e)) {
-        await clearStoredAuth();
-        set({ token: null, user: null, isAuthenticated: false, isLoading: false });
-        return;
-      }
-
-      if (isNetworkError(e)) {
-        const cachedUser = await readCachedUser();
-        if (storedToken && cachedUser) {
-          // Offline mode: use cached data
-          set({ token: storedToken, user: cachedUser, isAuthenticated: true, isLoading: false });
-        } else if (!storedToken) {
-          // No token at all - clear everything
-          await clearStoredAuth();
-          set({ token: null, user: null, isAuthenticated: false, isLoading: false });
-        } else {
-          // Have token but no cached user - clear everything
-          await clearStoredAuth();
-          set({ token: null, user: null, isAuthenticated: false, isLoading: false });
-        }
-        return;
-      }
-
       if (__DEV__) console.warn('Failed to restore token', e);
-      if (!storedToken) {
-        await clearStoredAuth();
-        set({ token: null, user: null, isAuthenticated: false, isLoading: false });
-        return;
-      }
-      set({ token: storedToken, user: null, isAuthenticated: false, isLoading: false });
+      await clearStoredAuth();
+      set({ token: null, user: null, isAuthenticated: false, isLoading: false });
     }
   },
 }));
 
 // Auto-logout when API returns 401
 setOnUnauthorized(() => {
-  useAuthStore.setState({ token: null, user: null, isAuthenticated: false });
+  useAuthStore.setState({ token: null, user: null, isAuthenticated: false, isLoading: false });
 });

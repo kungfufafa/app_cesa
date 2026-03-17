@@ -84,7 +84,7 @@ export function EmployeeDetail({ employeeId }: { employeeId?: string }) {
           onPress={() => refetch()}
           suppressHighlighting
         >
-          {isRefetching ? "Loading..." : "Refresh"}
+          {isRefetching ? "Memuat..." : "Muat Ulang"}
         </Text>
       </View>
     );
@@ -97,7 +97,7 @@ export function EmployeeDetail({ employeeId }: { employeeId?: string }) {
           Data tidak ditemukan
         </Text>
         <Text variant="muted" className="text-center">
-          Karyawan dengan ID tersebut tidak ada di list.
+          Karyawan dengan ID tersebut tidak ada di daftar.
         </Text>
       </View>
     );
@@ -206,11 +206,11 @@ export function EmployeeDetail({ employeeId }: { employeeId?: string }) {
         </Text>
         <View className="gap-3">
           <Field label="ID" value={employee.id_employee} />
-          <Field label="Branch" value={employee.branch} />
-          <Field label="Organization" value={employee.organization} />
-          <Field label="Title" value={employee.title} />
-          <Field label="Job" value={employee.job} />
-          <Field label="Join Date" value={employee.join_date} />
+          <Field label="Cabang" value={employee.branch} />
+          <Field label="Organisasi" value={employee.organization} />
+          <Field label="Jabatan" value={employee.title} />
+          <Field label="Pekerjaan" value={employee.job} />
+          <Field label="Tanggal Bergabung" value={employee.join_date} />
         </View>
       </View>
 
@@ -222,8 +222,8 @@ export function EmployeeDetail({ employeeId }: { employeeId?: string }) {
         </Text>
         <View className="gap-3">
           <Field label="Email" value={employee.email} />
-          <Field label="Mobile Phone" value={employee.mobile_phone} />
-          <Field label="Phone" value={employee.phone} />
+          <Field label="Nomor HP" value={employee.mobile_phone} />
+          <Field label="Telepon" value={employee.phone} />
         </View>
       </View>
 
@@ -234,12 +234,12 @@ export function EmployeeDetail({ employeeId }: { employeeId?: string }) {
           Data Personal
         </Text>
         <View className="gap-3">
-          <Field label="Gender" value={employee.gender} />
-          <Field label="Birth Date" value={employee.birth_date} />
-          <Field label="Marital Status" value={employee.marital_status} />
-          <Field label="Tax Status" value={employee.tax_status} />
-          <Field label="Religion" value={employee.religion} />
-          <Field label="Blood Type" value={employee.blood_type} />
+          <Field label="Jenis Kelamin" value={employee.gender} />
+          <Field label="Tanggal Lahir" value={employee.birth_date} />
+          <Field label="Status Perkawinan" value={employee.marital_status} />
+          <Field label="Status Pajak" value={employee.tax_status} />
+          <Field label="Agama" value={employee.religion} />
+          <Field label="Golongan Darah" value={employee.blood_type} />
         </View>
       </View>
     </ScrollView>

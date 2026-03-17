@@ -1,3 +1,3 @@
-export { AttendanceHistoryCard } from "./AttendanceHistoryCard";
-export { AttendanceStatusBadge } from "./AttendanceStatusBadge";
-export type { AttendanceStatus } from "./AttendanceStatusBadge";
+export { PresensiHistoryCard } from "./PresensiHistoryCard";
+export { PresensiStatusBadge } from "./PresensiStatusBadge";
+export type { PresensiStatus } from "./PresensiStatusBadge";

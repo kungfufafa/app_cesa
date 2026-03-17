@@ -1,23 +1,15 @@
-import { Text } from "@/components/ui/text";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { SheetHeader, SheetModal, SheetScrollView, SheetView } from "@/components/ui/BottomSheet";
 import { useMoreServicesStore } from "@/store/useMoreServicesStore";
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-  BottomSheetView,
-} from "@gorhom/bottom-sheet";
 import React, { useEffect, useRef, useMemo } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ServiceItem } from "./ServiceItem";
 import { SERVICES } from "@/constants/services";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 export function MoreServicesSheet() {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const { isOpen, close } = useMoreServicesStore();
-  const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
 
   const snapPoints = useMemo(() => ["50%", "90%"], []);
@@ -37,30 +29,14 @@ export function MoreServicesSheet() {
   const allServices = SERVICES.filter((s) => s.id !== "lainnya");
 
   return (
-    <BottomSheetModal
+    <SheetModal
       ref={bottomSheetRef}
       snapPoints={snapPoints}
-      enablePanDownToClose
       onDismiss={handleDismiss}
-      backdropComponent={(props) => (
-        <BottomSheetBackdrop
-          {...props}
-          disappearsOnIndex={-1}
-          appearsOnIndex={0}
-        />
-      )}
-      backgroundStyle={{
-        backgroundColor: Colors[colorScheme ?? "light"].background,
-      }}
-      handleIndicatorStyle={{
-        backgroundColor: Colors[colorScheme ?? "light"].icon,
-      }}
     >
-      <BottomSheetView className="flex-1 px-6 pt-2 pb-8">
-        <Text className="text-lg font-semibold text-foreground mb-4 px-2">
-          Semua Layanan
-        </Text>
-        <BottomSheetScrollView
+      <SheetView className="flex-1 px-6 pt-2 pb-8">
+        <SheetHeader title="Semua Layanan" className="mb-4 px-2" onClose={handleDismiss} />
+        <SheetScrollView
           className="flex-1"
           contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
         >
@@ -77,8 +53,8 @@ export function MoreServicesSheet() {
               </View>
             ))}
           </View>
-        </BottomSheetScrollView>
-      </BottomSheetView>
-    </BottomSheetModal>
+        </SheetScrollView>
+      </SheetView>
+    </SheetModal>
   );
 }

@@ -1,29 +1,26 @@
 import { Button } from "@/components/ui/Button";
+import {
+  SheetHeader,
+  SheetModal,
+  SheetScrollView,
+  SheetView,
+} from "@/components/ui/BottomSheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
+import { SheetTextInput } from "@/components/ui/SheetTextInput";
 import { Text } from "@/components/ui/text";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import {
-  getLeaves,
-  LeaveItem,
-  submitLeave,
-} from "@/services/presensi/forms";
+import { useLeaveList, useSubmitLeave } from "@/hooks/presensi/usePresensiQueries";
 import { normalizeApiError } from "@/lib/api-errors";
-import { getStatusBadgeClasses, getStatusLabel } from "@/lib/status-helpers";
-import { formatDate, formatForApi } from "@/lib/dates";
-import { createFormData, normalizeMimeType } from "@/lib/form-data";
 import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-  BottomSheetTextInput,
-  BottomSheetView,
-} from "@gorhom/bottom-sheet";
-import { LinearGradient } from "expo-linear-gradient";
-import * as DocumentPicker from "expo-document-picker";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+  pickRequestAttachment,
+  type SelectedRequestAttachment,
+  toRequestAttachment,
+} from "@/lib/request-attachment";
+import { getStatusBadgeClasses, getStatusLabel } from "@/lib/status-helpers";
+import { Stack, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -33,30 +30,32 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 const LEAVE_TYPE_OPTIONS = ["Izin", "Sakit", "Cuti", "Lainnya"] as const;
 
 export default function LeaveRequestScreen() {
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const params = useLocalSearchParams<{ type?: string }>();
   const createSheetRef = useRef<BottomSheetModal>(null);
   const createSheetSnapPoints = useMemo(() => ["75%", "90%"], []);
 
-  const [leaveList, setLeaveList] = useState<LeaveItem[]>([]);
-  const [isLoadingList, setIsLoadingList] = useState(true);
-  const [isRefreshingList, setIsRefreshingList] = useState(false);
-  const [hasLoadError, setHasLoadError] = useState(false);
+  const {
+    data: leaveList = [],
+    isLoading: isLoadingList,
+    isError: hasLoadError,
+    isRefetching: isRefreshingList,
+    refetch,
+  } = useLeaveList();
+  const submitMutation = useSubmitLeave();
 
   const [type, setType] = useState<(typeof LEAVE_TYPE_OPTIONS)[number]>("Izin");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
-  const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(
-    null
-  );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<SelectedRequestAttachment | null>(null);
+  const isSubmitting = submitMutation.isPending;
 
   useEffect(() => {
     if (!params.type) return;
@@ -69,35 +68,6 @@ export default function LeaveRequestScreen() {
       setType(normalizedType);
     }
   }, [params.type]);
-
-  const loadLeaves = useCallback(async (isRefresh = false) => {
-    if (isRefresh) {
-      setIsRefreshingList(true);
-    } else {
-      setIsLoadingList(true);
-    }
-
-    try {
-      const items = await getLeaves();
-      setLeaveList(items);
-      setHasLoadError(false);
-    } catch {
-      if (!isRefresh) {
-        setLeaveList([]);
-      }
-      setHasLoadError(true);
-    } finally {
-      if (isRefresh) {
-        setIsRefreshingList(false);
-      } else {
-        setIsLoadingList(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadLeaves();
-  }, [loadLeaves]);
 
   const openCreateSheet = () => {
     createSheetRef.current?.present();
@@ -119,16 +89,9 @@ export default function LeaveRequestScreen() {
 
   const handleSelectFile = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ["image/*", "application/pdf"],
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled) return;
-
-      setSelectedFile(result.assets[0]);
-    } catch (error) {
-      Alert.alert("Error", "Gagal memilih file");
+      setSelectedFile(await pickRequestAttachment());
+    } catch {
+      Alert.alert("Kesalahan", "Gagal memilih file");
     }
   };
 
@@ -139,28 +102,18 @@ export default function LeaveRequestScreen() {
     }
 
     try {
-      setIsSubmitting(true);
-      await submitLeave({
+      await submitMutation.mutateAsync({
         type,
         start_date: startDate.trim(),
         end_date: endDate.trim(),
         reason: reason.trim(),
-        file: selectedFile
-          ? {
-              uri: selectedFile.uri,
-              name: selectedFile.name,
-              mimeType: selectedFile.mimeType ?? "application/octet-stream",
-            }
-          : null,
+        file: toRequestAttachment(selectedFile),
       });
 
       createSheetRef.current?.dismiss();
       Alert.alert("Sukses", "Pengajuan izin/cuti berhasil dikirim.");
-      await loadLeaves(true);
     } catch (error) {
       Alert.alert("Gagal", normalizeApiError(error));
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -174,7 +127,7 @@ export default function LeaveRequestScreen() {
         <View className="flex-row items-center justify-between">
           <Text className="text-lg font-bold">Riwayat Pengajuan</Text>
           <TouchableOpacity
-            onPress={() => void loadLeaves(true)}
+            onPress={() => void refetch()}
             disabled={isRefreshingList}
             className="px-3 py-1.5 rounded-lg bg-secondary border border-border"
             activeOpacity={0.75}
@@ -183,7 +136,7 @@ export default function LeaveRequestScreen() {
               <ActivityIndicator size="small" />
             ) : (
               <Text variant="muted" className="text-xs font-semibold">
-                Refresh
+                Muat Ulang
               </Text>
             )}
           </TouchableOpacity>
@@ -249,42 +202,25 @@ export default function LeaveRequestScreen() {
         </Button>
       </View>
 
-      <BottomSheetModal
+      <SheetModal
         ref={createSheetRef}
         snapPoints={createSheetSnapPoints}
-        enablePanDownToClose
         onDismiss={handleDismissCreateSheet}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop
-            {...props}
-            disappearsOnIndex={-1}
-            appearsOnIndex={0}
-          />
-        )}
-        backgroundStyle={{
-          backgroundColor: Colors[colorScheme ?? "light"].background,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: Colors[colorScheme ?? "light"].icon,
-        }}
-        keyboardBehavior="extend"
-        keyboardBlurBehavior="restore"
-        android_keyboardInputMode="adjustResize"
       >
-        <BottomSheetView className="flex-1 px-6 pt-2">
-          <BottomSheetScrollView
+        <SheetView className="flex-1 px-6 pt-2">
+          <SheetScrollView
             className="flex-1"
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
           >
-            <Text className="text-lg font-semibold text-foreground">
-              Form Pengajuan Izin/Cuti
-            </Text>
-            <Text variant="muted" className="mt-1">
-              Isi jenis, tanggal, dan alasan pengajuan.
-            </Text>
+            <SheetHeader
+              title="Form Pengajuan Izin/Cuti"
+              description="Isi jenis, tanggal, dan alasan pengajuan."
+              className="mb-4"
+              onClose={closeCreateSheet}
+            />
 
-            <View className="mt-4">
+            <View>
               <Text className="text-sm font-medium text-foreground mb-2">Jenis</Text>
               <View className="flex-row flex-wrap gap-2">
                 {LEAVE_TYPE_OPTIONS.map((item) => (
@@ -312,7 +248,7 @@ export default function LeaveRequestScreen() {
             <View className="mt-4 gap-3">
               <View>
                 <Text className="text-sm font-medium text-foreground mb-2">Tanggal Mulai</Text>
-                <BottomSheetTextInput
+                <SheetTextInput
                   value={startDate}
                   onChangeText={setStartDate}
                   placeholder="YYYY-MM-DD"
@@ -323,7 +259,7 @@ export default function LeaveRequestScreen() {
 
               <View>
                 <Text className="text-sm font-medium text-foreground mb-2">Tanggal Selesai</Text>
-                <BottomSheetTextInput
+                <SheetTextInput
                   value={endDate}
                   onChangeText={setEndDate}
                   placeholder="YYYY-MM-DD"
@@ -334,7 +270,7 @@ export default function LeaveRequestScreen() {
 
               <View>
                 <Text className="text-sm font-medium text-foreground mb-2">Alasan</Text>
-                <BottomSheetTextInput
+                <SheetTextInput
                   value={reason}
                   onChangeText={setReason}
                   placeholder="Jelaskan alasan pengajuan..."
@@ -393,9 +329,9 @@ export default function LeaveRequestScreen() {
                 )}
               </Button>
             </View>
-          </BottomSheetScrollView>
-        </BottomSheetView>
-      </BottomSheetModal>
+          </SheetScrollView>
+        </SheetView>
+      </SheetModal>
     </SafeAreaView>
   );
 }

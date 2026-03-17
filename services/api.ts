@@ -1,10 +1,8 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { API_CONFIG } from '@/constants/config';
+import * as SecureStore from '@/lib/secure-storage';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
-
-if (!API_URL) {
+if (!API_CONFIG.baseUrl) {
   throw new Error(
     'EXPO_PUBLIC_API_URL is not set. Add it to your .env file (see .env.example).'
   );
@@ -30,7 +28,12 @@ const ensureTokenLoaded = async () => {
 
   if (!tokenInitialization) {
     tokenInitialization = (async () => {
-      authToken = await SecureStore.getItemAsync('token');
+      try {
+        authToken = await SecureStore.getItemAsync('token');
+      } catch (e) {
+        authToken = null;
+        if (__DEV__) console.warn('Failed to load auth token from storage', e);
+      }
     })();
   }
 
@@ -38,7 +41,7 @@ const ensureTokenLoaded = async () => {
 };
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_CONFIG.baseUrl,
   timeout: API_CONFIG.timeout,
   headers: {
     'Content-Type': 'application/json',

@@ -1,32 +1,26 @@
 import api from './api';
+import { parseApiPayload } from './api-response';
+import { z } from "zod";
 
 export interface LoginCredentials {
   email: string;
   password: string;
 }
 
-interface LoginApiResponse {
-  access_token: string;
-  token_type: string;
-  user: {
-    id: number;
-    is_default: number;
-    name: string;
-    email: string;
-    email_verified_at: string | null;
-    language: string | null;
-    is_active: number;
-    resource_permission: string;
-    has_all_form_transfer_access: number;
-    deleted_at: string | null;
-    created_at: string;
-    updated_at: string;
-    default_company_id: number;
-    partner_id: number;
-  };
-}
+const authUserSchema = z.object({
+  id: z.coerce.number().int(),
+  name: z.string().min(1),
+  email: z.string().email(),
+}).passthrough();
 
-export type AuthUser = LoginApiResponse['user'];
+const loginApiResponseSchema = z.object({
+  message: z.string().optional(),
+  token: z.string().min(1),
+  token_type: z.string().min(1),
+  user: authUserSchema,
+});
+
+export type AuthUser = z.infer<typeof authUserSchema>;
 
 export interface AuthResponse {
   token: string;
@@ -34,18 +28,19 @@ export interface AuthResponse {
 }
 
 export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-  const response = await api.post<LoginApiResponse>('/api/login', credentials);
+  const response = await api.post('/admin/api/v1/login', credentials);
+  const payload = parseApiPayload(
+    loginApiResponseSchema,
+    response.data,
+    "Respons login tidak valid."
+  );
+
   return {
-    token: response.data.access_token,
-    user: response.data.user,
+    token: payload.token,
+    user: payload.user,
   };
 };
 
-export const getMe = async (): Promise<AuthUser> => {
-  const response = await api.get<AuthUser>('/api/me');
-  return response.data;
-};
-
 export const logout = async (): Promise<void> => {
-  await api.post('/api/logout');
+  await api.post('/admin/api/v1/logout');
 };

@@ -2,13 +2,12 @@ import React from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "@/components/ui/text";
-import { useSafeNetInfo } from "@/lib/netinfo";
+import { useSafeNetInfo, isOfflineState } from "@/lib/netinfo";
 
 export function OfflineBanner() {
   const netInfo = useSafeNetInfo();
   const insets = useSafeAreaInsets();
-  const isOffline =
-    netInfo.isConnected === false || netInfo.isInternetReachable === false;
+  const isOffline = isOfflineState(netInfo.isConnected, netInfo.isInternetReachable);
 
   if (!isOffline) return null;
 

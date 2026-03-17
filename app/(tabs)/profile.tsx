@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Alert, Linking } from "react-native";
+import { View, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +10,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useAuthBottomSheet } from "@/store/useAuthBottomSheet";
 import { SUPPORT_CONTACT } from "@/constants/config";
+import { openExternalUrl } from "@/lib/open-url";
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
@@ -24,7 +25,7 @@ export default function ProfileScreen() {
             <IconSymbol name="person.fill" size={32} color="#71717a" />
           </View>
           <Text variant="h3" className="mb-2">
-            Guest
+            Tamu
           </Text>
           <Text variant="muted" className="text-center mb-6">
             Login untuk melihat profil dan pengaturan
@@ -38,32 +39,25 @@ export default function ProfileScreen() {
   }
 
   const handleSignOut = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert("Keluar", "Apakah Anda yakin ingin keluar?", [
+      { text: "Batal", style: "cancel" },
       {
-        text: "Sign Out",
+        text: "Keluar",
         style: "destructive",
         onPress: () => {
           signOut().catch((e) => {
-            if (__DEV__) console.warn("Sign out failed", e);
+            if (__DEV__) console.warn("Gagal keluar", e);
           });
         },
       },
     ]);
   };
 
-  const handleOpenDeveloperWhatsApp = async () => {
-    const whatsappUrl = `https://wa.me/${SUPPORT_CONTACT.whatsapp}`;
-    try {
-      const canOpen = await Linking.canOpenURL(whatsappUrl);
-      if (!canOpen) {
-        Alert.alert("Error", "WhatsApp tidak dapat dibuka di perangkat ini.");
-        return;
-      }
-      await Linking.openURL(whatsappUrl);
-    } catch {
-      Alert.alert("Error", "Gagal membuka WhatsApp.");
-    }
+  const handleOpenDeveloperWhatsApp = () => {
+    openExternalUrl(`https://wa.me/${SUPPORT_CONTACT.whatsapp}`, {
+      fallbackTitle: "Kesalahan",
+      fallbackMessage: "WhatsApp tidak dapat dibuka di perangkat ini.",
+    });
   };
 
   const getInitials = (name?: string) => {
@@ -78,7 +72,7 @@ export default function ProfileScreen() {
 
   const name = user?.name?.trim() || "";
   const email = user?.email?.trim() || "";
-  const displayName = name || email || "User";
+  const displayName = name || email || "Pengguna";
   const displayEmail = email || "email@example.com";
 
   return (
@@ -105,12 +99,12 @@ export default function ProfileScreen() {
             variant="ghost"
             className="justify-between px-4 py-4 rounded-none"
             onPress={() =>
-              Alert.alert("Coming Soon", "This feature is under development")
+              Alert.alert("Segera Hadir", "Fitur ini sedang dalam pengembangan.")
             }
           >
             <View className="flex-row items-center gap-3">
               <IconSymbol name="person.fill" size={20} color="#71717a" />
-              <Text>Edit Profile</Text>
+              <Text>Edit Profil</Text>
             </View>
             <IconSymbol name="chevron.right" size={18} color="#a1a1aa" />
           </Button>
@@ -119,12 +113,12 @@ export default function ProfileScreen() {
             variant="ghost"
             className="justify-between px-4 py-4 rounded-none"
             onPress={() =>
-              Alert.alert("Coming Soon", "This feature is under development")
+              Alert.alert("Segera Hadir", "Fitur ini sedang dalam pengembangan.")
             }
           >
             <View className="flex-row items-center gap-3">
               <IconSymbol name="gear" size={20} color="#71717a" />
-              <Text>Settings</Text>
+              <Text>Pengaturan</Text>
             </View>
             <IconSymbol name="chevron.right" size={18} color="#a1a1aa" />
           </Button>
@@ -133,7 +127,7 @@ export default function ProfileScreen() {
             variant="ghost"
             className="justify-between px-4 py-4 rounded-none"
             onPress={() =>
-              Alert.alert("Coming Soon", "This feature is under development")
+              Alert.alert("Segera Hadir", "Fitur ini sedang dalam pengembangan.")
             }
           >
             <View className="flex-row items-center gap-3">
@@ -142,7 +136,7 @@ export default function ProfileScreen() {
                 size={20}
                 color="#71717a"
               />
-              <Text>Help & Support</Text>
+              <Text>Bantuan & Dukungan</Text>
             </View>
             <IconSymbol name="chevron.right" size={18} color="#a1a1aa" />
           </Button>
@@ -160,23 +154,23 @@ export default function ProfileScreen() {
                 size={20}
                 color="#ef4444"
               />
-              <Text className="text-destructive">Sign Out</Text>
+              <Text className="text-destructive">Keluar</Text>
             </View>
           </Button>
         </Card>
 
         <Text variant="muted" className="text-center text-xs mt-auto">
-          Version 1.0.0
+          Versi 1.0.0
         </Text>
         <Text variant="muted" className="text-center text-xs -mt-4">
-          Engineered by{" "}
+          Dikembangkan oleh{" "}
           <Text
             className="text-primary font-semibold text-xs"
             onPress={handleOpenDeveloperWhatsApp}
           >
-            Web App Developer
+            Tim Pengembang Web App
           </Text>
-          {" • Supported by IT Support Division"}
+          {" • Didukung oleh Divisi IT Support"}
         </Text>
       </View>
     </SafeAreaView>

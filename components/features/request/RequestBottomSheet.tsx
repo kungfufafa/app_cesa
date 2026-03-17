@@ -1,17 +1,12 @@
+import { SheetHeader, SheetModal, SheetView } from "@/components/ui/BottomSheet";
 import { Text } from "@/components/ui/text";
 import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useRequestBottomSheet } from "@/store/useRequestBottomSheet";
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetView,
-} from "@gorhom/bottom-sheet";
+import { openExternalUrl } from "@/lib/open-url";
 import { Href, router } from "expo-router";
-import * as Linking from "expo-linking";
 import React, { useEffect, useRef } from "react";
 import { Alert, TouchableOpacity, View } from "react-native";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 type MenuItem = {
   id: string;
@@ -28,7 +23,7 @@ const MENU_ITEMS: MenuItem[] = [
     id: "exit-clearance",
     title: "Exit Clearance",
     icon: "rectangle.portrait.and.arrow.right",
-    description: "Process employee resignation",
+    description: "Proses pengunduran diri karyawan",
     color: "#ef4444",
     url: "https://cesa.completeselular.com/exit-clearance",
   },
@@ -36,7 +31,7 @@ const MENU_ITEMS: MenuItem[] = [
     id: "form-transfer",
     title: "Form Transfer",
     icon: "arrow.left.arrow.right",
-    description: "Transfer employee to another department",
+    description: "Pindahkan karyawan ke departemen lain",
     color: "#3b82f6",
     route: "/form-transfer",
   },
@@ -44,7 +39,7 @@ const MENU_ITEMS: MenuItem[] = [
     id: "man-power",
     title: "Man Power",
     icon: "briefcase.fill",
-    description: "Request man power",
+    description: "Ajukan kebutuhan tenaga kerja",
     color: "#10b981",
     url: "https://cesa.completeselular.com/request-man-powers",
   },
@@ -53,7 +48,6 @@ const MENU_ITEMS: MenuItem[] = [
 export function RequestBottomSheet() {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const { isOpen, close } = useRequestBottomSheet();
-  const colorScheme = useColorScheme();
 
   useEffect(() => {
     if (isOpen) {
@@ -69,37 +63,29 @@ export function RequestBottomSheet() {
 
   const handleMenuPress = (item: MenuItem) => {
     if (item.url) {
-      Linking.openURL(item.url);
+      openExternalUrl(item.url);
       close();
     } else if (item.route) {
       router.push(item.route);
       close();
     } else {
-      Alert.alert("Coming Soon", `${item.title} belum tersedia.`);
+      Alert.alert("Segera Hadir", `${item.title} belum tersedia.`);
     }
   };
 
   return (
-    <BottomSheetModal
+    <SheetModal
       ref={bottomSheetRef}
       snapPoints={["45%"]}
-      enablePanDownToClose
       onDismiss={handleDismiss}
-      backdropComponent={(props) => (
-        <BottomSheetBackdrop
-          {...props}
-          disappearsOnIndex={-1}
-          appearsOnIndex={0}
-        />
-      )}
-      backgroundStyle={{
-        backgroundColor: Colors[colorScheme ?? "light"].background,
-      }}
-      handleIndicatorStyle={{
-        backgroundColor: Colors[colorScheme ?? "light"].icon,
-      }}
     >
-      <BottomSheetView className="flex-1 px-6 pt-4 pb-8">
+      <SheetView className="flex-1 px-6 pt-4 pb-8">
+        <SheetHeader
+          title="Pengajuan"
+          description="Pilih layanan pengajuan yang tersedia."
+          className="mb-4"
+          onClose={handleDismiss}
+        />
         <View className="gap-2">
           {MENU_ITEMS.map((item) => (
             <TouchableOpacity
@@ -111,7 +97,7 @@ export function RequestBottomSheet() {
                 <IconSymbol
                   size={18}
                   name={item.icon}
-                  color={Colors[colorScheme ?? "light"].text}
+                  color="#111827"
                 />
               </View>
               <Text className="font-medium text-base text-foreground">
@@ -120,7 +106,7 @@ export function RequestBottomSheet() {
             </TouchableOpacity>
           ))}
         </View>
-      </BottomSheetView>
-    </BottomSheetModal>
+      </SheetView>
+    </SheetModal>
   );
 }

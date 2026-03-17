@@ -5,31 +5,31 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 import {
-    AttendanceTodayResponse,
+    PresensiHariIniResponse,
     ScheduleResponse,
-} from "@/services/presensi/attendance";
+} from "@/services/presensi/presensi";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Alert, View } from "react-native";
-import { useAttendancePermissions } from "@/hooks/useAttendancePermissions";
+import { usePresensiPermissions } from "@/hooks/usePresensiPermissions";
 
-interface AttendanceActionCardProps {
+interface PresensiActionCardProps {
     schedule: ScheduleResponse | null;
     isLoading: boolean;
-    todayAttendance: AttendanceTodayResponse | null;
-    isLoadingToday: boolean;
+    presensiHariIni: PresensiHariIniResponse | null;
+    isLoadingPresensiHariIni: boolean;
     className?: string;
 }
 
-export function AttendanceActionCard({
+export function PresensiActionCard({
     schedule,
     isLoading,
-    todayAttendance,
-    isLoadingToday,
+    presensiHariIni,
+    isLoadingPresensiHariIni,
     className,
-}: AttendanceActionCardProps) {
+}: PresensiActionCardProps) {
     const router = useRouter();
-    const { ensurePermissions, isChecking: isCheckingPermissions } = useAttendancePermissions();
+    const { ensurePermissions, isChecking: isCheckingPermissions } = usePresensiPermissions();
 
     if (isLoading) {
         return (
@@ -60,12 +60,12 @@ export function AttendanceActionCard({
     };
 
     const handleClockOut = async () => {
-        if (isLoadingToday) {
+        if (isLoadingPresensiHariIni) {
             Alert.alert("Mohon Tunggu", "Data presensi hari ini masih dimuat.");
             return;
         }
 
-        if (!todayAttendance?.check_in_time) {
+        if (!presensiHariIni?.check_in_time) {
             Alert.alert(
                 "Belum Bisa Pulang",
                 "Anda belum melakukan Masuk hari ini, jadi belum dapat melakukan Pulang."

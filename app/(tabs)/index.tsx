@@ -35,7 +35,7 @@ export default function HomeScreen() {
                       {getGreeting()},
                     </Text>
                     <Text className="text-sm text-white/80">
-                      {user?.name?.trim() || "User"}
+                      {user?.name?.trim() || "Pengguna"}
                     </Text>
                   </View>
                   <View className="w-10 h-10 rounded-full bg-white/20 items-center justify-center border border-white/30">

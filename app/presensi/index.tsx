@@ -1,36 +1,37 @@
-import { AttendanceActionCard } from "@/components/features/presensi/AttendanceActionCard";
+import { PresensiActionCard } from "@/components/features/presensi/PresensiActionCard";
 import { Button } from "@/components/ui/Button";
+import {
+  SheetHeader,
+  SheetModal,
+  SheetScrollView,
+  SheetView,
+} from "@/components/ui/BottomSheet";
 import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
+import { SheetTextInput } from "@/components/ui/SheetTextInput";
 import { Text } from "@/components/ui/text";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LinearGradient } from "expo-linear-gradient";
-import { AttendanceRecord } from "@/services/presensi/attendance";
+import { PresensiRecord } from "@/services/presensi/presensi";
 import {
-  ATTENDANCE_REMINDER_MINUTES_BEFORE,
-  ATTENDANCE_REMINDER_MINUTES_MAX,
-  ATTENDANCE_REMINDER_MINUTES_MIN,
+  PRESENSI_REMINDER_MINUTES_BEFORE,
+  PRESENSI_REMINDER_MINUTES_MAX,
+  PRESENSI_REMINDER_MINUTES_MIN,
   getReminderMinutesBefore,
   setReminderMinutesBefore,
-  syncAttendanceReminderNotifications,
+  syncPresensiReminderNotifications,
 } from "@/services/presensi/notifications";
 import {
-  useAttendanceToday,
+  usePresensiHariIni,
   useSchedule,
-  useAttendanceHistory,
+  useRiwayatPresensi,
 } from "@/hooks/presensi/usePresensiQueries";
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-  BottomSheetTextInput,
-  BottomSheetView,
-} from "@gorhom/bottom-sheet";
 import dayjs from "@/lib/dates";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 export default function PresensiDashboard() {
   const router = useRouter();
@@ -38,18 +39,18 @@ export default function PresensiDashboard() {
   const colorScheme = useColorScheme();
 
   const currentDate = dayjs();
-  const { data: todayData, isLoading: isLoadingToday } = useAttendanceToday();
+  const { data: presensiHariIni, isLoading: isLoadingPresensiHariIni } = usePresensiHariIni();
   const { data: schedule, isLoading: isLoadingSchedule } = useSchedule();
-  const { data: history = [], isLoading: isLoadingHistory } = useAttendanceHistory(
+  const { data: history = [], isLoading: isLoadingHistory } = useRiwayatPresensi(
     currentDate.month() + 1,
     currentDate.year()
   );
 
   const [reminderMinutes, setReminderMinutes] = useState(
-    ATTENDANCE_REMINDER_MINUTES_BEFORE
+    PRESENSI_REMINDER_MINUTES_BEFORE
   );
   const [reminderInput, setReminderInput] = useState(
-    String(ATTENDANCE_REMINDER_MINUTES_BEFORE)
+    String(PRESENSI_REMINDER_MINUTES_BEFORE)
   );
   const [isLoadingReminderMinutes, setIsLoadingReminderMinutes] = useState(true);
   const [isSavingReminderMinutes, setIsSavingReminderMinutes] = useState(false);
@@ -120,9 +121,9 @@ export default function PresensiDashboard() {
 
     const syncReminders = async () => {
       try {
-        const result = await syncAttendanceReminderNotifications(
+        const result = await syncPresensiReminderNotifications(
           schedule,
-          todayData ?? null,
+          presensiHariIni ?? null,
           reminderMinutes
         );
 
@@ -139,7 +140,7 @@ export default function PresensiDashboard() {
         }
       } catch (error) {
         if (__DEV__) {
-          console.warn("Failed to sync attendance reminders", error);
+          console.warn("Gagal menyinkronkan pengingat presensi", error);
         }
       }
     };
@@ -149,7 +150,7 @@ export default function PresensiDashboard() {
     return () => {
       isCancelled = true;
     };
-  }, [todayData, isLoadingReminderMinutes, reminderMinutes, schedule]);
+  }, [presensiHariIni, isLoadingReminderMinutes, reminderMinutes, schedule]);
 
   const openReminderSettings = () => {
     setReminderInput(String(reminderMinutes));
@@ -171,18 +172,18 @@ export default function PresensiDashboard() {
     if (!Number.isFinite(parsedMinutes) || !Number.isInteger(parsedMinutes)) {
       Alert.alert(
         "Input Tidak Valid",
-        `Masukkan angka ${ATTENDANCE_REMINDER_MINUTES_MIN}-${ATTENDANCE_REMINDER_MINUTES_MAX} menit.`
+        `Masukkan angka ${PRESENSI_REMINDER_MINUTES_MIN}-${PRESENSI_REMINDER_MINUTES_MAX} menit.`
       );
       return;
     }
 
     if (
-      parsedMinutes < ATTENDANCE_REMINDER_MINUTES_MIN ||
-      parsedMinutes > ATTENDANCE_REMINDER_MINUTES_MAX
+      parsedMinutes < PRESENSI_REMINDER_MINUTES_MIN ||
+      parsedMinutes > PRESENSI_REMINDER_MINUTES_MAX
     ) {
       Alert.alert(
         "Input Tidak Valid",
-        `Pengingat hanya bisa diatur antara ${ATTENDANCE_REMINDER_MINUTES_MIN}-${ATTENDANCE_REMINDER_MINUTES_MAX} menit.`
+        `Pengingat hanya bisa diatur antara ${PRESENSI_REMINDER_MINUTES_MIN}-${PRESENSI_REMINDER_MINUTES_MAX} menit.`
       );
       return;
     }
@@ -197,13 +198,13 @@ export default function PresensiDashboard() {
       if (__DEV__) {
         console.warn("Failed to save reminder minutes", error);
       }
-      Alert.alert("Error", "Gagal menyimpan pengaturan pengingat.");
+      Alert.alert("Kesalahan", "Gagal menyimpan pengaturan pengingat.");
     } finally {
       setIsSavingReminderMinutes(false);
     }
   };
 
-  const renderItem = ({ item }: { item: AttendanceRecord }) => {
+  const renderItem = ({ item }: { item: PresensiRecord }) => {
     const dateObj = dayjs(item.date);
     const timeDisplay = item.check_in_time ? item.check_in_time.slice(0, 5) : "--:--";
 
@@ -261,11 +262,11 @@ export default function PresensiDashboard() {
           </Text>
         </View>
 
-        <AttendanceActionCard
+        <PresensiActionCard
           schedule={schedule ?? null}
           isLoading={isLoadingSchedule}
-          todayAttendance={todayData ?? null}
-          isLoadingToday={isLoadingToday}
+          presensiHariIni={presensiHariIni ?? null}
+          isLoadingPresensiHariIni={isLoadingPresensiHariIni}
           className="mt-5 mb-0 border-border"
         />
       </LinearGradient>
@@ -320,57 +321,40 @@ export default function PresensiDashboard() {
         </View>
       </View>
 
-      <BottomSheetModal
+      <SheetModal
         ref={reminderSettingsSheetRef}
         snapPoints={reminderSettingsSnapPoints}
-        enablePanDownToClose
         onDismiss={handleReminderSettingsDismiss}
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop
-            {...props}
-            disappearsOnIndex={-1}
-            appearsOnIndex={0}
-          />
-        )}
-        backgroundStyle={{
-          backgroundColor: Colors[colorScheme ?? "light"].background,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: Colors[colorScheme ?? "light"].icon,
-        }}
-        keyboardBehavior="extend"
-        keyboardBlurBehavior="restore"
-        android_keyboardInputMode="adjustResize"
       >
-        <BottomSheetView className="flex-1 px-6 pt-2">
-          <BottomSheetScrollView
+        <SheetView className="flex-1 px-6 pt-2">
+          <SheetScrollView
             className="flex-1"
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
           >
-            <Text className="text-lg font-semibold text-foreground">
-              Pengaturan Pengingat
-            </Text>
-            <Text variant="muted" className="mt-1">
-              Atur berapa menit sebelum jam Masuk/Pulang notifikasi dikirim.
-            </Text>
+            <SheetHeader
+              title="Pengaturan Pengingat"
+              description="Atur berapa menit sebelum jam Masuk/Pulang notifikasi dikirim."
+              className="mb-4"
+              onClose={closeReminderSettings}
+            />
 
-            <View className="mt-4">
+            <View>
               <Text className="text-sm font-medium text-foreground mb-2">
                 Menit Pengingat
               </Text>
-              <BottomSheetTextInput
+              <SheetTextInput
                 value={reminderInput}
                 onChangeText={setReminderInput}
                 keyboardType="number-pad"
-                placeholder={`Contoh: ${ATTENDANCE_REMINDER_MINUTES_BEFORE}`}
+                placeholder={`Contoh: ${PRESENSI_REMINDER_MINUTES_BEFORE}`}
                 placeholderTextColor={Colors[colorScheme ?? "light"].icon}
                 maxLength={3}
                 className="border border-border rounded-lg px-4 py-3 text-foreground bg-background"
               />
               <Text variant="muted" className="mt-2 text-xs">
-                Rentang: {ATTENDANCE_REMINDER_MINUTES_MIN} -{" "}
-                {ATTENDANCE_REMINDER_MINUTES_MAX} menit
+                Rentang: {PRESENSI_REMINDER_MINUTES_MIN} -{" "}
+                {PRESENSI_REMINDER_MINUTES_MAX} menit
               </Text>
             </View>
 
@@ -397,9 +381,9 @@ export default function PresensiDashboard() {
                 )}
               </Button>
             </View>
-          </BottomSheetScrollView>
-        </BottomSheetView>
-      </BottomSheetModal>
+          </SheetScrollView>
+        </SheetView>
+      </SheetModal>
     </View>
   );
 }

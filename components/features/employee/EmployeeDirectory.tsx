@@ -1,12 +1,11 @@
 import React from "react";
 import { FlatList, View } from "react-native";
-import { useQuery } from "@tanstack/react-query";
-
 import { Input } from "@/components/ui/Input";
 import { Text } from "@/components/ui/text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmployeeListItem } from "@/components/features/employee/EmployeeListItem";
-import { getEmployeeDirectory, type Employee } from "@/services/employee";
+import { useEmployeeDirectory } from "@/hooks/employee/useEmployeeQueries";
+import type { Employee } from "@/services/employee";
 
 function matchesSearch(employee: Employee, q: string) {
   const haystack = [
@@ -38,10 +37,7 @@ export function EmployeeDirectory() {
     isError,
     refetch,
     isRefetching,
-  } = useQuery({
-    queryKey: ["employee-directory"],
-    queryFn: getEmployeeDirectory,
-  });
+  } = useEmployeeDirectory();
 
   const filteredEmployees = React.useMemo(() => {
     const list = employees ?? [];
@@ -67,7 +63,7 @@ export function EmployeeDirectory() {
           onPress={() => refetch()}
           suppressHighlighting
         >
-          {isRefetching ? "Loading..." : "Refresh"}
+          {isRefetching ? "Memuat..." : "Muat Ulang"}
         </Text>
       </View>
     );
@@ -77,15 +73,14 @@ export function EmployeeDirectory() {
     <View className="flex-1 bg-background">
       <View className="px-4 pt-2 pb-3">
         <Text variant="h3" className="mb-1">
-          Employee Directory
+          Direktori Karyawan
         </Text>
         <Text variant="muted" className="mb-3">
-          Total: {filteredEmployees.length} employee
-          {filteredEmployees.length === 1 ? "" : "s"}
+          Total: {filteredEmployees.length} karyawan
         </Text>
 
         <Input
-          placeholder="Cari nama / email / branch / job..."
+          placeholder="Cari nama / email / cabang / jabatan..."
           value={query}
           onChangeText={setQuery}
           autoCapitalize="none"

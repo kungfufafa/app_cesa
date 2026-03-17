@@ -1,6 +1,3 @@
-import { ClassValue } from "clsx";
-import { cn } from "./utils";
-
 /**
  * Status types for requests (leave, overtime, etc.)
  */
@@ -64,9 +61,9 @@ export function getStatusLabel(status: string | RequestStatus): string {
 }
 
 /**
- * Attendance status types
+ * Presensi status types
  */
-export type AttendanceStatus =
+export type PresensiStatus =
   | "hadir"
   | "terlambat"
   | "pulang_cepat"
@@ -76,12 +73,12 @@ export type AttendanceStatus =
   | "alpha";
 
 /**
- * Returns Tailwind classes for attendance status badge
- * @param status - The attendance status
+ * Returns Tailwind classes for presensi status badge
+ * @param status - The presensi status
  * @returns Object with container and text class names
  */
-export function getAttendanceStatusClasses(
-  status: AttendanceStatus
+export function getPresensiStatusClasses(
+  status: PresensiStatus
 ): StatusBadgeStyles {
   switch (status) {
     case "hadir":
@@ -120,12 +117,12 @@ export function getAttendanceStatusClasses(
 }
 
 /**
- * Returns Indonesian label for attendance status
- * @param status - The attendance status
- * @returns Indonesian attendance status label
+ * Returns Indonesian label for presensi status
+ * @param status - The presensi status
+ * @returns Indonesian presensi status label
  */
-export function getAttendanceStatusLabel(
-  status: AttendanceStatus
+export function getPresensiStatusLabel(
+  status: PresensiStatus
 ): string {
   switch (status) {
     case "hadir":

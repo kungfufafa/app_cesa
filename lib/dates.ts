@@ -1,6 +1,5 @@
 import dayjs from "dayjs";
 import "dayjs/locale/id";
-import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 
@@ -13,7 +12,6 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.locale("id");
 
 // Extend with plugins
-dayjs.extend(relativeTime);
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -32,13 +30,6 @@ export function formatDate(date: string | Date): string {
 /**
  * Format date with time (e.g., "15 Jan 2024, 14:30")
  */
-export function formatDateTime(date: string | Date): string {
-  return dayjs(date).format("DD MMM YYYY, HH:mm");
-}
-
-/**
- * Format time only (e.g., "14:30")
- */
 export function formatTime(date: string | Date): string {
   return dayjs(date).format("HH:mm");
 }
@@ -49,39 +40,4 @@ export function formatTime(date: string | Date): string {
 export function formatTimeString(value: string | null | undefined): string {
   if (!value) return "--:--";
   return value.slice(0, 5);
-}
-
-/**
- * Format for API requests (ISO string)
- */
-export function formatForApi(date: Date | string): string {
-  return dayjs(date).toISOString();
-}
-
-/**
- * Get relative time (e.g., "2 jam yang lalu")
- */
-export function getRelativeTime(date: string | Date): string {
-  return dayjs(date).fromNow();
-}
-
-/**
- * Check if date is today
- */
-export function isToday(date: string | Date): boolean {
-  return dayjs(date).isSame(dayjs(), "day");
-}
-
-/**
- * Check if date is in the past
- */
-export function isPast(date: string | Date): boolean {
-  return dayjs(date).isBefore(dayjs());
-}
-
-/**
- * Check if date is in the future
- */
-export function isFuture(date: string | Date): boolean {
-  return dayjs(date).isAfter(dayjs());
 }

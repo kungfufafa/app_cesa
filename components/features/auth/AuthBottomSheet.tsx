@@ -1,27 +1,25 @@
 import { Button } from "@/components/ui/Button";
+import {
+  SheetHeader,
+  SheetModal,
+  SheetScrollView,
+  SheetView,
+} from "@/components/ui/BottomSheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Label } from "@/components/ui/label";
+import { SheetTextInput } from "@/components/ui/SheetTextInput";
 import { Text } from "@/components/ui/text";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuthBottomSheet } from "@/store/useAuthBottomSheet";
 import { useAuthStore } from "@/store/useAuthStore";
-import {
-  BottomSheetBackdrop,
-  BottomSheetModal,
-  BottomSheetScrollView,
-  BottomSheetTextInput,
-  BottomSheetView,
-} from "@gorhom/bottom-sheet";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Keyboard, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 export function AuthBottomSheet() {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const { isOpen, close, executeCallback } = useAuthBottomSheet();
   const signIn = useAuthStore((s) => s.signIn);
-  const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
 
   const snapPoints = useMemo(() => ["60%", "80%"], []);
@@ -91,49 +89,29 @@ export function AuthBottomSheet() {
   };
 
   return (
-    <BottomSheetModal
+    <SheetModal
       ref={bottomSheetRef}
       snapPoints={snapPoints}
-      enablePanDownToClose
       onDismiss={handleDismiss}
-      backdropComponent={(props) => (
-        <BottomSheetBackdrop
-          {...props}
-          disappearsOnIndex={-1}
-          appearsOnIndex={0}
-        />
-      )}
-      backgroundStyle={{
-        backgroundColor: Colors[colorScheme ?? "light"].background,
-      }}
-      handleIndicatorStyle={{
-        backgroundColor: Colors[colorScheme ?? "light"].icon,
-      }}
-      keyboardBehavior="extend"
-      keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
     >
-      <BottomSheetView className="flex-1 px-6 pt-2">
-        <BottomSheetScrollView
+      <SheetView className="flex-1 px-6 pt-2">
+        <SheetScrollView
           className="flex-1"
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
         >
-          <View className="items-center mb-6">
-            <Text className="text-xl font-semibold text-foreground">
-              Login untuk melanjutkan
-            </Text>
-            <Text className="text-muted-foreground text-center mt-1">
-              Masuk ke akun untuk akses fitur
-            </Text>
-          </View>
+          <SheetHeader
+            title="Login untuk melanjutkan"
+            description="Masuk ke akun untuk akses fitur"
+            className="mb-6"
+            onClose={handleDismiss}
+          />
 
           <View className="gap-4">
             <View className="gap-1.5">
               <Label>Email</Label>
-              <BottomSheetTextInput
+              <SheetTextInput
                 placeholder="name@mail.com"
-                placeholderTextColor={Colors[colorScheme ?? "light"].icon}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
@@ -145,9 +123,8 @@ export function AuthBottomSheet() {
             <View className="gap-1.5">
               <Label>Password</Label>
               <View className="flex-row items-center border border-border rounded-lg px-4 py-3 bg-background">
-                <BottomSheetTextInput
+                <SheetTextInput
                   placeholder="••••••••"
-                  placeholderTextColor={Colors[colorScheme ?? "light"].icon}
                   secureTextEntry={!isPasswordVisible}
                   value={password}
                   onChangeText={setPassword}
@@ -164,7 +141,7 @@ export function AuthBottomSheet() {
                   <IconSymbol
                     name={isPasswordVisible ? "eye.slash" : "eye"}
                     size={20}
-                    color={Colors[colorScheme ?? "light"].icon}
+                    color="#71717a"
                   />
                 </Pressable>
               </View>
@@ -202,8 +179,8 @@ export function AuthBottomSheet() {
               Lupa password? Hubungi Admin
             </Text>
           </View>
-        </BottomSheetScrollView>
-      </BottomSheetView>
-    </BottomSheetModal>
+        </SheetScrollView>
+      </SheetView>
+    </SheetModal>
   );
 }

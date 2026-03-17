@@ -1,10 +1,10 @@
 import React from "react";
-import { View, FlatList, TouchableOpacity, Pressable, Alert } from "react-native";
+import { View, FlatList, TouchableOpacity, Pressable } from "react-native";
 import { Text } from "@/components/ui/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import * as Linking from "expo-linking";
+import { openExternalUrl } from "@/lib/open-url";
 import { LinearGradient } from "expo-linear-gradient";
 import formTransferData from "@/assets/data/form-transfer.json";
 
@@ -60,12 +60,8 @@ export default function FormTransferScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const handlePress = async (url: string) => {
-    try {
-      await Linking.openURL(url);
-    } catch {
-      Alert.alert("Error", "Tidak bisa membuka tautan ini.");
-    }
+  const handlePress = (url: string) => {
+    openExternalUrl(url);
   };
 
   const data =

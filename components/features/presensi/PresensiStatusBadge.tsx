@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 
-export type AttendanceStatus =
+export type PresensiStatus =
   | "present"
   | "hadir"
   | "late"
@@ -20,7 +20,7 @@ export type AttendanceStatus =
   | "libur"
   | "unknown";
 
-interface AttendanceStatusBadgeProps {
+interface PresensiStatusBadgeProps {
   status: string;
   isLate?: boolean;
   className?: string;
@@ -91,11 +91,11 @@ function getStatusConfig(status: string, isLate?: boolean) {
   };
 }
 
-export function AttendanceStatusBadge({
+export function PresensiStatusBadge({
   status,
   isLate,
   className,
-}: AttendanceStatusBadgeProps) {
+}: PresensiStatusBadgeProps) {
   const config = getStatusConfig(status, isLate);
 
   return (

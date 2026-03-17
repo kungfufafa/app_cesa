@@ -2,14 +2,14 @@ import { Text } from "@/components/ui/text";
 import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import * as Linking from "expo-linking";
+import { openExternalUrl } from "@/lib/open-url";
 import React from "react";
 import { Image, TouchableOpacity, View } from "react-native";
 import { Href, useRouter } from "expo-router";
 
 interface ServiceItemProps {
   iconName?: IconSymbolName;
-  image?: any;
+  image?: number;
   label: string;
   url: string;
   iconColor?: string;
@@ -35,7 +35,7 @@ export function ServiceItem({
       if (url.startsWith("/")) {
         router.push(url as Href);
       } else {
-        Linking.openURL(url);
+        openExternalUrl(url);
       }
     }
   };

@@ -5,18 +5,18 @@ import { Text } from "@/components/ui/text";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { cn } from "@/lib/utils";
-import { AttendanceRecord } from "@/services/presensi/attendance";
-import { AttendanceStatusBadge } from "./AttendanceStatusBadge";
+import { PresensiRecord } from "@/services/presensi/presensi";
+import { PresensiStatusBadge } from "./PresensiStatusBadge";
 
-interface AttendanceHistoryCardProps {
-  record: AttendanceRecord;
+interface PresensiHistoryCardProps {
+  record: PresensiRecord;
   className?: string;
 }
 
-export function AttendanceHistoryCard({
+export function PresensiHistoryCard({
   record,
   className,
-}: AttendanceHistoryCardProps) {
+}: PresensiHistoryCardProps) {
   const dateObj = dayjs(record.date);
 
   const formatTime = (time: string | null): string => {
@@ -51,7 +51,7 @@ export function AttendanceHistoryCard({
           </View>
         </View>
 
-        <AttendanceStatusBadge status={record.status} isLate={record.is_late} />
+        <PresensiStatusBadge status={record.status} isLate={record.is_late} />
       </CardContent>
     </Card>
   );
