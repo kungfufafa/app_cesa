@@ -2,9 +2,10 @@ import { Text } from "@/components/ui/text";
 import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { openExternalUrl } from "@/lib/open-url";
 import React from "react";
-import { Image, TouchableOpacity, View } from "react-native";
+import { Image, Pressable, View } from "react-native";
 import { Href, useRouter } from "expo-router";
 
 interface ServiceItemProps {
@@ -26,13 +27,23 @@ export function ServiceItem({
 }: ServiceItemProps) {
   const router = useRouter();
   const colorScheme = useColorScheme();
+  const { requireAuth } = useRequireAuth();
   const fallbackIconColor = Colors[colorScheme ?? "light"].icon;
+  const isProtectedInternalRoute =
+    url.startsWith("/presensi") ||
+    url.startsWith("/inbox") ||
+    url.startsWith("/helpdesk");
 
   const handlePress = () => {
     if (onPress) {
       onPress();
     } else if (url) {
       if (url.startsWith("/")) {
+        if (isProtectedInternalRoute) {
+          requireAuth(() => router.push(url as Href));
+          return;
+        }
+
         router.push(url as Href);
       } else {
         openExternalUrl(url);
@@ -41,10 +52,9 @@ export function ServiceItem({
   };
 
   return (
-    <TouchableOpacity
+    <Pressable
       className="flex-1 items-center py-2"
       onPress={handlePress}
-      activeOpacity={0.7}
     >
       <View className="w-14 h-14 rounded-xl bg-secondary/50 border border-border items-center justify-center mb-1 overflow-hidden">
         {image ? (
@@ -63,6 +73,6 @@ export function ServiceItem({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }

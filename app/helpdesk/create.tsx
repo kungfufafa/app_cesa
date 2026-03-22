@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
 import { Href, Stack, router } from "expo-router";
 
 import { HelpdeskTicketForm } from "@/components/features/helpdesk/HelpdeskTicketForm";
-import { Button } from "@/components/ui/Button";
-import { ScreenHeader } from "@/components/ui/ScreenHeader";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { useCreateHelpdeskTicket, useHelpdeskMeta } from "@/hooks/helpdesk/useHelpdeskQueries";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -39,10 +41,8 @@ export default function CreateHelpdeskScreen() {
     return (
       <View className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
-        <ScreenHeader title="Tiket Baru" />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#2563eb" />
-        </View>
+        <ScreenHeader title="Tiket Baru" onBackPress={() => router.back()} />
+        <Spinner centered size="large" color="#2563eb" />
       </View>
     );
   }
@@ -51,10 +51,12 @@ export default function CreateHelpdeskScreen() {
     return (
       <View className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
-        <ScreenHeader title="Tiket Baru" />
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="font-semibold">Gagal memuat metadata helpdesk.</Text>
-        </View>
+        <ScreenHeader title="Tiket Baru" onBackPress={() => router.back()} />
+        <EmptyState
+          className="flex-1"
+          title="Gagal memuat metadata helpdesk."
+          description="Coba buka halaman ini beberapa saat lagi."
+        />
       </View>
     );
   }
@@ -62,7 +64,7 @@ export default function CreateHelpdeskScreen() {
   return (
     <View className="flex-1 bg-background">
       <Stack.Screen options={{ headerShown: false }} />
-      <ScreenHeader title="Tiket Baru" />
+      <ScreenHeader title="Tiket Baru" onBackPress={() => router.back()} />
       <HelpdeskTicketForm
         meta={meta}
         scopedMeta={scopedMeta}

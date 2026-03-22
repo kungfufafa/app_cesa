@@ -2,6 +2,8 @@ import React from "react";
 import { Pressable, View } from "react-native";
 
 import { HelpdeskStatusBadge } from "@/components/features/helpdesk/HelpdeskStatusBadge";
+import { HelpdeskRichText } from "@/components/features/helpdesk/HelpdeskRichText";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { getHelpdeskPriorityBadgeClasses } from "@/lib/helpdesk";
@@ -37,27 +39,27 @@ export function HelpdeskTicketCard({
           </View>
 
           {ticket.description ? (
-            <Text className="text-sm text-muted-foreground" numberOfLines={2}>
-              {ticket.description}
-            </Text>
+            <HelpdeskRichText
+              html={ticket.description}
+              className="text-sm text-muted-foreground"
+              numberOfLines={2}
+            />
           ) : null}
 
           <View className="flex-row flex-wrap gap-2">
             {ticket.priority?.name ? (
-              <View
-                className={`rounded-full border px-3 py-1 ${priorityClasses.container}`}
-              >
-                <Text className={`text-xs font-semibold ${priorityClasses.text}`}>
+              <Badge variant="outline" className={priorityClasses.container}>
+                <Text className={priorityClasses.text}>
                   {ticket.priority.name}
                 </Text>
-              </View>
+              </Badge>
             ) : null}
             {ticket.unit?.name ? (
-              <View className="rounded-full border border-border bg-secondary px-3 py-1">
-                <Text className="text-xs font-semibold text-muted-foreground">
+              <Badge variant="secondary">
+                <Text className="text-muted-foreground">
                   {ticket.unit.name}
                 </Text>
-              </View>
+              </Badge>
             ) : null}
           </View>
 

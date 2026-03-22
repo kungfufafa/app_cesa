@@ -18,7 +18,7 @@ const leaveItemSchema = z.object({
   status: z.string().min(1),
   note: nullableStringSchema.optional(),
   attachment: nullableStringSchema.optional(),
-});
+}).passthrough();
 
 const overtimeItemSchema = z.object({
   id: z.coerce.number().int(),
@@ -29,7 +29,9 @@ const overtimeItemSchema = z.object({
   status: z.string().min(1),
   note: nullableStringSchema.optional(),
   attachment: nullableStringSchema.optional(),
-});
+}).passthrough();
+
+const PRESENSI_BASE_PATH = '/admin/api/v1/presensi';
 
 export interface RequestAttachment {
   uri: string;
@@ -74,27 +76,32 @@ const appendAttachment = (
   } as unknown as Blob);
 };
 
-const postMultipartForm = async (
+const postRequestForm = async (
   url: string,
   fields: Record<string, string>,
   attachment?: RequestAttachment | null
 ) => {
-  const formData = new FormData();
+  const response = attachment
+    ? await (() => {
+        const formData = new FormData();
 
-  Object.entries(fields).forEach(([key, value]) => {
-    formData.append(key, value);
-  });
-  appendAttachment(formData, attachment);
+        Object.entries(fields).forEach(([key, value]) => {
+          formData.append(key, value);
+        });
+        appendAttachment(formData, attachment);
 
-  const response = await api.post(url, formData, {
-    headers: MULTIPART_HEADERS,
-  });
+        return api.post(url, formData, {
+          headers: MULTIPART_HEADERS,
+        });
+      })()
+    : await api.post(url, fields);
+
   return response.data;
 };
 
 export const submitLeave = async (data: LeaveRequest) => {
-  const response = await postMultipartForm(
-    '/api/leaves',
+  const response = await postRequestForm(
+    `${PRESENSI_BASE_PATH}/leaves`,
     {
       type: data.type,
       start_date: data.start_date,
@@ -107,8 +114,8 @@ export const submitLeave = async (data: LeaveRequest) => {
 };
 
 export const submitOvertime = async (data: OvertimeRequest) => {
-  const response = await postMultipartForm(
-    '/api/overtimes',
+  const response = await postRequestForm(
+    `${PRESENSI_BASE_PATH}/overtimes`,
     {
       date: data.date,
       start_time: data.start_time,
@@ -121,7 +128,7 @@ export const submitOvertime = async (data: OvertimeRequest) => {
 };
 
 export const getOvertimes = async (): Promise<OvertimeItem[]> => {
-  const response = await api.get('/api/overtimes');
+  const response = await api.get(`${PRESENSI_BASE_PATH}/overtimes`);
   return parseApiEnvelope(
     z.array(overtimeItemSchema),
     response.data,
@@ -130,7 +137,7 @@ export const getOvertimes = async (): Promise<OvertimeItem[]> => {
 };
 
 export const getLeaves = async (): Promise<LeaveItem[]> => {
-  const response = await api.get('/api/leaves');
+  const response = await api.get(`${PRESENSI_BASE_PATH}/leaves`);
   return parseApiEnvelope(
     z.array(leaveItemSchema),
     response.data,

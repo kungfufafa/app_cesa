@@ -1,7 +1,7 @@
 import React from "react";
 import { Linking, Pressable, View } from "react-native";
 
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Text } from "@/components/ui/text";
 import { normalizeApiError } from "@/lib/api-errors";

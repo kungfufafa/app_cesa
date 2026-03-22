@@ -1,12 +1,14 @@
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { submitPresensi } from "@/services/presensi/presensi";
 import { useSchedule } from "@/hooks/presensi/usePresensiQueries";
 import { normalizeApiError } from "@/lib/api-errors";
-import { Ionicons } from "@expo/vector-icons";
 import dayjs from "@/lib/dates";
+import { useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,7 +16,6 @@ import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Dimensions,
   NativeModules,
@@ -91,6 +92,7 @@ export default function FaceCaptureScreen() {
   const params = useLocalSearchParams<{ type: "clock_in" | "clock_out" }>();
   const type = params.type || "clock_in";
   const title = type === "clock_out" ? "Pulang" : "Masuk";
+  const queryClient = useQueryClient();
 
   const { data: schedule } = useSchedule();
   const [permission, requestPermission] = useCameraPermissions();
@@ -104,7 +106,7 @@ export default function FaceCaptureScreen() {
   if (!permission) {
     return (
       <View className="flex-1 justify-center items-center bg-background">
-        <ActivityIndicator size="large" color="#3b82f6" />
+        <Spinner size="large" color="#3b82f6" />
       </View>
     );
   }
@@ -130,9 +132,9 @@ export default function FaceCaptureScreen() {
               </Text>
             </Button>
 
-            <Pressable onPress={() => router.back()} className="mt-4">
+            <Button variant="link" onPress={() => router.back()} className="mt-2">
               <Text className="text-muted-foreground font-medium">Kembali</Text>
-            </Pressable>
+            </Button>
           </CardContent>
         </Card>
       </View>
@@ -176,11 +178,13 @@ export default function FaceCaptureScreen() {
       }
 
       await submitPresensi({
+        action: type,
         photoUri: photo.uri,
         latitude: location.latitude,
         longitude: location.longitude,
         isMockLocation: location.isMockLocation,
       });
+      await queryClient.invalidateQueries({ queryKey: ["presensi"] });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert("Berhasil", `Presensi ${title.toLowerCase()} berhasil dikirim.`, [
@@ -280,7 +284,7 @@ export default function FaceCaptureScreen() {
 
             <Button onPress={handleSubmit} disabled={isSubmitting} size="lg">
               {isSubmitting ? (
-                <ActivityIndicator color="#fff" />
+                <Spinner color="#fff" />
               ) : (
                 <Text className="text-primary-foreground font-bold">
                   Kirim Presensi

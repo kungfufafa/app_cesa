@@ -150,9 +150,14 @@ const helpdeskListResponseSchema = z.object({
     .default({}),
 });
 
-const helpdeskTicketResponseSchema = z.object({
+const helpdeskTicketWrappedResponseSchema = z.object({
   data: helpdeskTicketDetailSchema,
 });
+
+const helpdeskTicketResponseSchema = z.union([
+  helpdeskTicketWrappedResponseSchema,
+  helpdeskTicketDetailSchema,
+]);
 
 const helpdeskDeleteResponseSchema = z.object({
   message: z.string().min(1),
@@ -396,17 +401,27 @@ export const getHelpdeskTicket = async (ticketId: number | string): Promise<Help
     "Detail tiket helpdesk tidak valid."
   );
 
-  return payload.data;
+  return unwrapHelpdeskTicketResponse(payload);
 };
 
-const hasTicketFiles = (
+const shouldUseMultipartForTicket = (
   input: CreateHelpdeskTicketInput | UpdateHelpdeskTicketInput | ChangeHelpdeskStatusInput
-) => "supporting_attachments" in input && !!input.supporting_attachments?.length;
+) =>
+  ("supporting_attachments" in input && !!input.supporting_attachments?.length) ||
+  "existing_supporting_attachments" in input;
+
+const unwrapHelpdeskTicketResponse = (
+  payload: z.infer<typeof helpdeskTicketResponseSchema>
+): HelpdeskTicketDetail => {
+  const wrappedPayload = helpdeskTicketWrappedResponseSchema.safeParse(payload);
+
+  return wrappedPayload.success ? wrappedPayload.data.data : (payload as HelpdeskTicketDetail);
+};
 
 export const createHelpdeskTicket = async (
   input: CreateHelpdeskTicketInput
 ): Promise<HelpdeskTicketDetail> => {
-  const response = hasTicketFiles(input)
+  const response = shouldUseMultipartForTicket(input)
     ? await api.post("/admin/api/v1/helpdesk/tickets", buildHelpdeskTicketFormData(input), {
         headers: MULTIPART_HEADERS,
       })
@@ -418,14 +433,14 @@ export const createHelpdeskTicket = async (
     "Respons pembuatan tiket tidak valid."
   );
 
-  return payload.data;
+  return unwrapHelpdeskTicketResponse(payload);
 };
 
 export const updateHelpdeskTicket = async (
   ticketId: number | string,
   input: UpdateHelpdeskTicketInput | ChangeHelpdeskStatusInput
 ): Promise<HelpdeskTicketDetail> => {
-  const response = hasTicketFiles(input)
+  const response = shouldUseMultipartForTicket(input)
     ? await api.patch(
         `/admin/api/v1/helpdesk/tickets/${ticketId}`,
         buildHelpdeskTicketFormData(input),
@@ -444,7 +459,7 @@ export const updateHelpdeskTicket = async (
     "Respons update tiket tidak valid."
   );
 
-  return payload.data;
+  return unwrapHelpdeskTicketResponse(payload);
 };
 
 export const addHelpdeskComment = async (
@@ -470,7 +485,7 @@ export const addHelpdeskComment = async (
     "Respons komentar tiket tidak valid."
   );
 
-  return payload.data;
+  return unwrapHelpdeskTicketResponse(payload);
 };
 
 export const deleteHelpdeskTicket = async (ticketId: number | string): Promise<string> => {

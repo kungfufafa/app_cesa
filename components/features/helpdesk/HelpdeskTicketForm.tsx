@@ -6,10 +6,11 @@ import {
   HelpdeskSelectionModal,
   type HelpdeskSelectionOption,
 } from "@/components/features/helpdesk/HelpdeskSelectionModal";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Text } from "@/components/ui/text";
 import {
   isHelpdeskAttachmentTooLarge,
@@ -17,6 +18,7 @@ import {
   pickHelpdeskAttachments,
   toHelpdeskFileUploads,
 } from "@/lib/helpdesk-attachments";
+import { plainTextToHtml } from "@/lib/helpdesk-rich-text";
 import type {
   HelpdeskAttachment,
   HelpdeskFileUpload,
@@ -31,6 +33,7 @@ type HelpdeskTicketFormValues = {
   responsible_id?: number | null;
   title?: string;
   description?: string;
+  descriptionHtml?: string | null;
   existingAttachments?: HelpdeskAttachment[];
 };
 
@@ -42,8 +45,8 @@ type HelpdeskTicketFormSubmitPayload = {
   responsible_id?: number | null;
   title: string;
   description: string;
-  existing_supporting_attachments: string[];
-  supporting_attachments: HelpdeskFileUpload[];
+  existing_supporting_attachments?: string[];
+  supporting_attachments?: HelpdeskFileUpload[];
 };
 
 type HelpdeskTicketFormProps = {
@@ -107,6 +110,10 @@ export function HelpdeskTicketForm({
   );
   const [newAttachments, setNewAttachments] = useState<HelpdeskFileUpload[]>([]);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const initialDescriptionPlainText = initialValues?.description?.trim() ?? "";
+  const initialDescriptionHtml = initialValues?.descriptionHtml?.trim() ?? "";
+  const shouldIncludeExistingAttachmentsField =
+    initialValues?.existingAttachments !== undefined;
 
   useEffect(() => {
     onUnitChange?.(unitId ?? undefined);
@@ -174,17 +181,34 @@ export function HelpdeskTicketForm({
 
     setValidationError(null);
 
-    await onSubmit({
+    const normalizedDescription = description.trim();
+    const serializedDescription =
+      initialDescriptionHtml &&
+      normalizedDescription === initialDescriptionPlainText
+        ? initialDescriptionHtml
+        : plainTextToHtml(normalizedDescription);
+
+    const payload: HelpdeskTicketFormSubmitPayload = {
       priority_id: priorityId,
       unit_id: unitId,
       problem_category_id: problemCategoryId,
       company_id: companyId ?? meta.default_company_id ?? undefined,
       responsible_id: canAssignResponsible ? responsibleId : undefined,
       title: title.trim(),
-      description: description.trim(),
-      existing_supporting_attachments: existingAttachments.map((item) => item.path),
-      supporting_attachments: newAttachments,
-    });
+      description: serializedDescription,
+    };
+
+    if (shouldIncludeExistingAttachmentsField) {
+      payload.existing_supporting_attachments = existingAttachments.map(
+        (item) => item.path
+      );
+    }
+
+    if (newAttachments.length > 0) {
+      payload.supporting_attachments = newAttachments;
+    }
+
+    await onSubmit(payload);
   };
 
   const errorMessage = validationError ?? serverError ?? null;
@@ -260,13 +284,11 @@ export function HelpdeskTicketForm({
               </View>
               <View className="gap-2">
                 <Label>Deskripsi</Label>
-                <Input
+                <Textarea
                   placeholder="Jelaskan masalah yang sedang terjadi."
                   value={description}
                   onChangeText={setDescription}
-                  multiline
                   numberOfLines={5}
-                  textAlignVertical="top"
                   className="min-h-32 py-3"
                 />
               </View>

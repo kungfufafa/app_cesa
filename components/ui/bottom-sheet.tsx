@@ -1,21 +1,20 @@
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { cn } from "@/lib/utils";
-import { cssInterop } from "nativewind";
-import React from "react";
-import { View } from "react-native";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetScrollView,
   BottomSheetView,
-  type BottomSheetBackdropProps,
   type BottomSheetModalProps,
 } from "@gorhom/bottom-sheet";
+import { cssInterop } from "nativewind";
+import React from "react";
+import { View } from "react-native";
 
-import { Button } from "@/components/ui/Button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Text } from "@/components/ui/text";
+import { Button } from "@/components/ui/button";
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { cn } from "@/lib/utils";
 
 cssInterop(BottomSheetView, {
   className: {
@@ -29,7 +28,9 @@ cssInterop(BottomSheetScrollView, {
   },
 });
 
-export function SheetBackdrop(props: BottomSheetBackdropProps) {
+type SheetBackdropProps = React.ComponentProps<typeof BottomSheetBackdrop>;
+
+export function SheetBackdrop(props: SheetBackdropProps) {
   return <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />;
 }
 

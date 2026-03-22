@@ -7,10 +7,9 @@ import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useRequestBottomSheet } from "@/store/useRequestBottomSheet";
-import {
-  PRIMARY_GRADIENT,
-  PRIMARY_GRADIENT_LOCATIONS,
-} from "@/components/ui/Button";
+
+const PRIMARY_GRADIENT = ["#60A5FA", "#2563EB"] as const;
+const PRIMARY_GRADIENT_LOCATIONS = [0, 1] as const;
 
 export default function TabLayout() {
   const openRequestSheet = useRequestBottomSheet((s) => s.open);

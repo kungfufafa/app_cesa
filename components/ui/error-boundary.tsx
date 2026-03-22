@@ -1,5 +1,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
+
+import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 
 interface Props {
@@ -40,14 +42,14 @@ export class ErrorBoundary extends Component<Props, State> {
           <Text variant="muted" className="text-center mb-6">
             Aplikasi mengalami masalah. Coba muat ulang.
           </Text>
-          <Pressable
+          <Button
             onPress={this.handleReset}
-            className="bg-primary px-6 py-3 rounded-lg active:opacity-80"
+            className="px-6"
           >
             <Text className="text-primary-foreground font-semibold">
               Muat Ulang
             </Text>
-          </Pressable>
+          </Button>
         </View>
       );
     }

@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
 import { Href, Stack, router, useLocalSearchParams } from "expo-router";
 
 import { HelpdeskTicketForm } from "@/components/features/helpdesk/HelpdeskTicketForm";
-import { ScreenHeader } from "@/components/ui/ScreenHeader";
-import { Text } from "@/components/ui/text";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { Spinner } from "@/components/ui/spinner";
 import {
   useHelpdeskMeta,
   useHelpdeskTicket,
   useUpdateHelpdeskTicket,
 } from "@/hooks/helpdesk/useHelpdeskQueries";
 import { normalizeApiError } from "@/lib/api-errors";
+import { htmlToPlainText } from "@/lib/helpdesk-rich-text";
 
 export default function EditHelpdeskTicketScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,10 +34,8 @@ export default function EditHelpdeskTicketScreen() {
     return (
       <View className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
-        <ScreenHeader title="Edit Tiket" />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#2563eb" />
-        </View>
+        <ScreenHeader title="Edit Tiket" onBackPress={() => router.back()} />
+        <Spinner centered size="large" color="#2563eb" />
       </View>
     );
   }
@@ -44,10 +44,12 @@ export default function EditHelpdeskTicketScreen() {
     return (
       <View className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
-        <ScreenHeader title="Edit Tiket" />
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="font-semibold">Gagal memuat data tiket.</Text>
-        </View>
+        <ScreenHeader title="Edit Tiket" onBackPress={() => router.back()} />
+        <EmptyState
+          className="flex-1"
+          title="Gagal memuat data tiket."
+          description="Coba buka ulang halaman edit beberapa saat lagi."
+        />
       </View>
     );
   }
@@ -55,7 +57,7 @@ export default function EditHelpdeskTicketScreen() {
   return (
     <View className="flex-1 bg-background">
       <Stack.Screen options={{ headerShown: false }} />
-      <ScreenHeader title="Edit Tiket" />
+      <ScreenHeader title="Edit Tiket" onBackPress={() => router.back()} />
       <HelpdeskTicketForm
         meta={meta}
         scopedMeta={scopedMeta}
@@ -66,7 +68,8 @@ export default function EditHelpdeskTicketScreen() {
           company_id: ticket.company_id ?? undefined,
           responsible_id: ticket.responsible_id ?? undefined,
           title: ticket.title,
-          description: ticket.description ?? "",
+          description: htmlToPlainText(ticket.description),
+          descriptionHtml: ticket.description,
           existingAttachments: ticket.attachments,
         }}
         canAssignResponsible={ticket.abilities.assign_responsible}

@@ -1,6 +1,8 @@
 import React, { useCallback } from "react";
 import { View, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Text } from "@/components/ui/text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { formatCurrency } from "@/lib/utils";
@@ -35,40 +37,41 @@ export function PayrollCard({ payroll }: PayrollCardProps) {
   const statusLabel = payroll.status === "paid" ? "DIBAYAR" : "DIPROSES";
 
   return (
-    <Pressable
-      onPress={handlePress}
-      className="bg-card rounded-xl p-4 mb-3 border border-border flex-row justify-between items-center active:bg-secondary/10 shadow-sm"
-    >
-      <View className="flex-1">
-        <View className="flex-row justify-between items-start mb-2">
-          <Text className="text-lg font-bold capitalize text-foreground">
-            {payroll.month} {payroll.year}
-          </Text>
-          <View className={`px-2 py-1 rounded-full ${statusColor}`}>
-            <Text className={`text-[10px] font-bold ${statusTextColor}`}>
-              {statusLabel}
-            </Text>
-          </View>
-        </View>
+    <Pressable onPress={handlePress}>
+      <Card className="mb-3 py-0 active:bg-secondary/10">
+        <CardContent className="flex-row items-center justify-between p-4">
+          <View className="flex-1">
+            <View className="mb-2 flex-row items-start justify-between">
+              <Text className="text-lg font-bold capitalize text-foreground">
+                {payroll.month} {payroll.year}
+              </Text>
+              <Badge className={statusColor}>
+                <Text className={statusTextColor}>
+                  {statusLabel}
+                </Text>
+              </Badge>
+            </View>
 
-        <View className="flex-row justify-between items-end mt-1">
-          <View>
-            <Text className="text-xs text-muted-foreground">Gaji Bersih</Text>
-            <Text className="text-xl font-bold text-primary mt-0.5">
-              {formatCurrency(payroll.net_salary)}
-            </Text>
-          </View>
-        </View>
+            <View className="mt-1 flex-row items-end justify-between">
+              <View>
+                <Text className="text-xs text-muted-foreground">Gaji Bersih</Text>
+                <Text className="mt-0.5 text-xl font-bold text-primary">
+                  {formatCurrency(payroll.net_salary)}
+                </Text>
+              </View>
+            </View>
 
-        {payroll.payment_date && (
-          <Text className="text-xs text-muted-foreground mt-2">
-            Dibayar: {formatDate(payroll.payment_date)}
-          </Text>
-        )}
-      </View>
-      <View className="ml-2">
-        <IconSymbol name="chevron.right" size={20} color="#9ca3af" />
-      </View>
+            {payroll.payment_date ? (
+              <Text className="mt-2 text-xs text-muted-foreground">
+                Dibayar: {formatDate(payroll.payment_date)}
+              </Text>
+            ) : null}
+          </View>
+          <View className="ml-2">
+            <IconSymbol name="chevron.right" size={20} color="#9ca3af" />
+          </View>
+        </CardContent>
+      </Card>
     </Pressable>
   );
 }

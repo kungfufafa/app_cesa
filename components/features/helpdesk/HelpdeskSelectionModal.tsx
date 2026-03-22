@@ -8,8 +8,8 @@ import {
   SheetModal,
   SheetScrollView,
   SheetView,
-} from "@/components/ui/BottomSheet";
-import { Button } from "@/components/ui/Button";
+} from "@/components/ui/bottom-sheet";
+import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 

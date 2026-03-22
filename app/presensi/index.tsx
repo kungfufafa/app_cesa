@@ -1,13 +1,14 @@
 import { PresensiActionCard } from "@/components/features/presensi/PresensiActionCard";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import {
   SheetHeader,
   SheetModal,
   SheetScrollView,
   SheetView,
-} from "@/components/ui/BottomSheet";
+} from "@/components/ui/bottom-sheet";
 import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
-import { SheetTextInput } from "@/components/ui/SheetTextInput";
+import { SheetTextInput } from "@/components/ui/sheet-text-input";
+import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -29,7 +30,7 @@ import {
 import dayjs from "@/lib/dates";
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Pressable, View } from "react-native";
+import { Alert, FlatList, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
@@ -350,7 +351,7 @@ export default function PresensiDashboard() {
                 placeholder={`Contoh: ${PRESENSI_REMINDER_MINUTES_BEFORE}`}
                 placeholderTextColor={Colors[colorScheme ?? "light"].icon}
                 maxLength={3}
-                className="border border-border rounded-lg px-4 py-3 text-foreground bg-background"
+                className="px-4 py-3"
               />
               <Text variant="muted" className="mt-2 text-xs">
                 Rentang: {PRESENSI_REMINDER_MINUTES_MIN} -{" "}
@@ -373,7 +374,7 @@ export default function PresensiDashboard() {
                 disabled={isSavingReminderMinutes}
               >
                 {isSavingReminderMinutes ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <Spinner size="small" color="#fff" />
                 ) : (
                   <Text className="text-primary-foreground font-bold">
                     Simpan

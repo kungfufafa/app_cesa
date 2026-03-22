@@ -9,14 +9,18 @@ jest.mock("@/services/api", () => ({
 
 jest.mock("@/services/auth", () => ({
   login: jest.fn(),
+  getCurrentUser: jest.fn(),
   logout: jest.fn(),
+  logoutAll: jest.fn(),
 }));
 
 import { setAuthToken } from "@/services/api";
-import { login, logout } from "@/services/auth";
+import { getCurrentUser, login, logout, logoutAll } from "@/services/auth";
 
+const mockGetCurrentUser = getCurrentUser as jest.MockedFunction<typeof getCurrentUser>;
 const mockLogin = login as jest.MockedFunction<typeof login>;
 const mockLogout = logout as jest.MockedFunction<typeof logout>;
+const mockLogoutAll = logoutAll as jest.MockedFunction<typeof logoutAll>;
 const mockSetAuthToken = setAuthToken as jest.MockedFunction<
   typeof setAuthToken
 >;
@@ -25,7 +29,23 @@ const mockUser = {
   id: 1,
   name: "Test User",
   email: "test@example.com",
-  default_company_id: 1,
+  language: "id",
+  is_active: true,
+  resource_permission: "global",
+  avatar_url: null,
+  roles: [],
+  permissions: [],
+  default_company: {
+    id: 1,
+    name: "CESA",
+  },
+  allowed_companies: [
+    {
+      id: 1,
+      name: "CESA",
+    },
+  ],
+  current_access_token: null,
 };
 
 function resetStore() {
@@ -34,6 +54,7 @@ function resetStore() {
     user: null,
     isAuthenticated: false,
     isLoading: true,
+    authNotice: null,
   });
 }
 
@@ -43,6 +64,8 @@ describe("useAuthStore", () => {
   beforeEach(() => {
     consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
     jest.clearAllMocks();
+    mockGetCurrentUser.mockResolvedValue(mockUser);
+    mockLogoutAll.mockResolvedValue();
     resetStore();
   });
 
@@ -78,6 +101,7 @@ describe("useAuthStore", () => {
         JSON.stringify(mockUser)
       );
       expect(mockSetAuthToken).toHaveBeenCalledWith("test-token-123");
+      expect(mockGetCurrentUser).toHaveBeenCalledWith("test-token-123");
     });
 
     it("returns network error when login request fails without response", async () => {
@@ -112,6 +136,7 @@ describe("useAuthStore", () => {
 
       expect(result).toEqual({ ok: true });
       expect(useAuthStore.getState().token).toBe("nested-token");
+      expect(mockGetCurrentUser).toHaveBeenCalledWith("nested-token");
     });
 
     it("returns error when login API fails", async () => {
@@ -200,6 +225,26 @@ describe("useAuthStore", () => {
     });
   });
 
+  describe("signOutAll", () => {
+    it("clears state and secure store after logout all", async () => {
+      useAuthStore.setState({
+        token: "token",
+        user: mockUser,
+        isAuthenticated: true,
+      });
+
+      await useAuthStore.getState().signOutAll();
+
+      const state = useAuthStore.getState();
+      expect(state.token).toBeNull();
+      expect(state.user).toBeNull();
+      expect(state.isAuthenticated).toBe(false);
+      expect(mockLogoutAll).toHaveBeenCalledTimes(1);
+      expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("token");
+      expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith("user");
+    });
+  });
+
   describe("restoreSession", () => {
     it("restores session from stored token and cached user", async () => {
       (SecureStore.getItemAsync as jest.Mock).mockImplementation((key: string) => {
@@ -216,6 +261,7 @@ describe("useAuthStore", () => {
       expect(state.isAuthenticated).toBe(true);
       expect(state.isLoading).toBe(false);
       expect(mockSetAuthToken).toHaveBeenCalledWith("stored-token");
+      expect(mockGetCurrentUser).toHaveBeenCalledWith("stored-token");
     });
 
     it("clears auth when no stored token exists", async () => {
@@ -236,6 +282,7 @@ describe("useAuthStore", () => {
           return Promise.resolve(null);
         }
       );
+      mockGetCurrentUser.mockRejectedValueOnce(new Error("Network error"));
 
       await useAuthStore.getState().restoreSession();
 
@@ -255,12 +302,30 @@ describe("useAuthStore", () => {
           return Promise.resolve(null);
         }
       );
+      mockGetCurrentUser.mockRejectedValueOnce(new Error("Network error"));
 
       await useAuthStore.getState().restoreSession();
 
       const state = useAuthStore.getState();
       expect(state.token).toBeNull();
       expect(state.isAuthenticated).toBe(false);
+    });
+
+    it("falls back to cached user when server is unreachable", async () => {
+      (SecureStore.getItemAsync as jest.Mock).mockImplementation((key: string) => {
+        if (key === "token") return Promise.resolve("stored-token");
+        if (key === "user") return Promise.resolve(JSON.stringify(mockUser));
+        return Promise.resolve(null);
+      });
+      mockGetCurrentUser.mockRejectedValueOnce(new Error("Network error"));
+
+      await useAuthStore.getState().restoreSession();
+
+      const state = useAuthStore.getState();
+      expect(state.token).toBe("stored-token");
+      expect(state.user).toEqual(mockUser);
+      expect(state.isAuthenticated).toBe(true);
+      expect(state.authNotice).toContain("Menggunakan data akun terakhir");
     });
   });
 });

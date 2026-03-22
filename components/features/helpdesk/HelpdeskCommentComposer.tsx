@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Alert, Pressable, View } from "react-native";
+import { Alert, View } from "react-native";
 
 import { HelpdeskAttachmentList } from "@/components/features/helpdesk/HelpdeskAttachmentList";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Text } from "@/components/ui/text";
 import {
   isHelpdeskAttachmentTooLarge,
@@ -108,7 +108,7 @@ export function HelpdeskCommentComposer({
         </View>
       ) : null}
 
-      <Input
+      <Textarea
         value={comment}
         onChangeText={setComment}
         placeholder={
@@ -116,9 +116,7 @@ export function HelpdeskCommentComposer({
             ? "Tulis catatan internal untuk tim helpdesk."
             : "Tulis komentar untuk tiket ini."
         }
-        multiline
         numberOfLines={4}
-        textAlignVertical="top"
         className="min-h-28 py-3"
       />
 
@@ -155,13 +153,13 @@ function VisibilityChip({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      className={`rounded-full border px-4 py-2 ${active ? "border-primary bg-primary/10" : "border-border bg-background"}`}
+    <Button
+      size="sm"
+      variant={active ? "default" : "outline"}
+      className="rounded-full px-4"
       onPress={onPress}
     >
-      <Text className={active ? "text-primary font-semibold" : "text-muted-foreground"}>
-        {label}
-      </Text>
-    </Pressable>
+      <Text className="font-semibold">{label}</Text>
+    </Button>
   );
 }

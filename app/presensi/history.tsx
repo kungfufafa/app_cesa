@@ -1,25 +1,25 @@
 import React, { useState } from "react";
 import {
-  View,
-  TouchableOpacity,
   FlatList,
-  ActivityIndicator,
-  Pressable,
+  View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import dayjs from "@/lib/dates";
-import { Text } from "@/components/ui/text";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { Spinner } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
 import { useRiwayatPresensi } from "@/hooks/presensi/usePresensiQueries";
-import { PresensiRecord } from "@/services/presensi/presensi";
+import type { PresensiRecord } from "@/services/presensi/presensi";
 import { PresensiHistoryCard } from "@/components/features/presensi";
 
 export default function RiwayatPresensiScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [currentDate, setCurrentDate] = useState(dayjs());
 
   const { data: history = [], isLoading: isLoadingHistory } = useRiwayatPresensi(
@@ -37,73 +37,51 @@ export default function RiwayatPresensiScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["left", "right", "bottom"]}>
-      <LinearGradient
-        colors={["#3b82f6", "#60a5fa", "#93c5fd"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        className="px-4"
-        style={{ paddingTop: insets.top, paddingBottom: 10 }}
-      >
-        <View className="flex-row items-center">
-          <Pressable
-            className="w-9 h-9 rounded-full bg-white/20 items-center justify-center"
-            onPress={() => router.back()}
-            hitSlop={8}
-          >
-            <IconSymbol name="chevron.left" size={20} color="#fff" />
-          </Pressable>
-          <View className="flex-1 items-center">
-            <Text className="text-white text-base font-semibold">Riwayat Presensi</Text>
-          </View>
-          <View className="w-9 h-9" />
-        </View>
-      </LinearGradient>
+      <ScreenHeader title="Riwayat Presensi" onBackPress={() => router.back()} />
 
       <View className="px-4 pt-4">
         <Card className="py-0 border-border">
           <CardContent className="flex-row justify-between items-center py-4">
-            <TouchableOpacity
+            <Button
+              variant="secondary"
+              size="icon"
               onPress={handlePrevMonth}
-              className="w-10 h-10 bg-secondary rounded-lg items-center justify-center active:opacity-70"
+              className="rounded-lg"
             >
               <IconSymbol name="chevron.left" size={20} color="#6b7280" />
-            </TouchableOpacity>
+            </Button>
 
             <Text className="font-bold capitalize">
               {currentDate.format("MMMM YYYY")}
             </Text>
 
-            <TouchableOpacity
+            <Button
+              variant="secondary"
+              size="icon"
               onPress={handleNextMonth}
-              className="w-10 h-10 bg-secondary rounded-lg items-center justify-center active:opacity-70"
+              className="rounded-lg"
             >
               <IconSymbol name="chevron.right" size={20} color="#6b7280" />
-            </TouchableOpacity>
+            </Button>
           </CardContent>
         </Card>
       </View>
 
       {isLoadingHistory ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" />
-        </View>
+        <Spinner centered size="large" />
       ) : (
         <FlatList
           data={history}
           keyExtractor={(item) => String(item.id || item.date)}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100, flexGrow: 1 }}
           ListEmptyComponent={
-            <View className="items-center justify-center mt-20">
-              <View className="w-20 h-20 bg-secondary rounded-full items-center justify-center mb-4">
-                <IconSymbol name="calendar" size={40} color="#9ca3af" />
-              </View>
-              <Text className="font-medium">Belum ada riwayat</Text>
-              <Text variant="muted" className="text-center mt-1 px-10">
-                Tidak ada data presensi untuk bulan{" "}
-                {currentDate.format("MMMM YYYY")}
-              </Text>
-            </View>
+            <EmptyState
+              className="flex-1 pt-20"
+              icon={<IconSymbol name="calendar" size={40} color="#9ca3af" />}
+              title="Belum ada riwayat"
+              description={`Tidak ada data presensi untuk bulan ${currentDate.format("MMMM YYYY")}`}
+            />
           }
           ItemSeparatorComponent={() => <View className="h-3" />}
         />

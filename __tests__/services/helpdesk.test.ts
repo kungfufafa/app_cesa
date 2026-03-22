@@ -15,6 +15,7 @@ import {
   buildHelpdeskListQueryParams,
   buildHelpdeskTicketFormData,
   createHelpdeskTicket,
+  getHelpdeskTicket,
   getHelpdeskTickets,
   updateHelpdeskTicket,
 } from "@/services/helpdesk";
@@ -28,6 +29,42 @@ class MockFormData {
     this.entries.push([key, value]);
   }
 }
+
+const buildTicketDetailResponse = (overrides: Record<string, unknown> = {}) => ({
+  id: 99,
+  title: "Updated",
+  description: "Updated desc",
+  priority_id: 1,
+  unit_id: 2,
+  owner_id: 3,
+  problem_category_id: 4,
+  company_id: 5,
+  ticket_status_id: 2,
+  responsible_id: 6,
+  approved_at: "2026-03-17T10:00:00+00:00",
+  solved_at: null,
+  close_reason: null,
+  cancel_reason: null,
+  reopen_reason: null,
+  attachments: [],
+  comments: [],
+  histories: [],
+  abilities: {
+    view: true,
+    update: true,
+    delete: false,
+    comment: true,
+    change_status: true,
+    assign_responsible: true,
+    cancel: true,
+    close: true,
+    reopen: false,
+    add_internal_note: true,
+  },
+  created_at: "2026-03-17T10:00:00+00:00",
+  updated_at: "2026-03-17T11:00:00+00:00",
+  ...overrides,
+});
 
 describe("helpdesk service", () => {
   const originalFormData = global.FormData;
@@ -162,25 +199,13 @@ describe("helpdesk service", () => {
   it("creates ticket with json when no attachment is present", async () => {
     mockApi.post.mockResolvedValue({
       data: {
-        data: {
+        data: buildTicketDetailResponse({
           id: 12,
           title: "Printer offline",
           description: "Tidak bisa print.",
-          priority_id: 1,
-          unit_id: 2,
-          owner_id: 3,
-          problem_category_id: 4,
-          company_id: 5,
           ticket_status_id: 1,
           responsible_id: null,
           approved_at: null,
-          solved_at: null,
-          close_reason: null,
-          cancel_reason: null,
-          reopen_reason: null,
-          attachments: [],
-          comments: [],
-          histories: [],
           abilities: {
             view: true,
             update: true,
@@ -193,9 +218,8 @@ describe("helpdesk service", () => {
             reopen: false,
             add_internal_note: false,
           },
-          created_at: "2026-03-17T10:00:00+00:00",
           updated_at: "2026-03-17T10:00:00+00:00",
-        },
+        }),
       },
     });
 
@@ -221,40 +245,7 @@ describe("helpdesk service", () => {
   it("updates ticket with multipart when file is attached", async () => {
     mockApi.patch.mockResolvedValue({
       data: {
-        data: {
-          id: 99,
-          title: "Updated",
-          description: "Updated desc",
-          priority_id: 1,
-          unit_id: 2,
-          owner_id: 3,
-          problem_category_id: 4,
-          company_id: 5,
-          ticket_status_id: 2,
-          responsible_id: 6,
-          approved_at: "2026-03-17T10:00:00+00:00",
-          solved_at: null,
-          close_reason: null,
-          cancel_reason: null,
-          reopen_reason: null,
-          attachments: [],
-          comments: [],
-          histories: [],
-          abilities: {
-            view: true,
-            update: true,
-            delete: false,
-            comment: true,
-            change_status: true,
-            assign_responsible: true,
-            cancel: true,
-            close: true,
-            reopen: false,
-            add_internal_note: true,
-          },
-          created_at: "2026-03-17T10:00:00+00:00",
-          updated_at: "2026-03-17T11:00:00+00:00",
-        },
+        data: buildTicketDetailResponse(),
       },
     });
 
@@ -285,40 +276,7 @@ describe("helpdesk service", () => {
   it("posts comment as multipart when attachment exists", async () => {
     mockApi.post.mockResolvedValue({
       data: {
-        data: {
-          id: 99,
-          title: "Updated",
-          description: "Updated desc",
-          priority_id: 1,
-          unit_id: 2,
-          owner_id: 3,
-          problem_category_id: 4,
-          company_id: 5,
-          ticket_status_id: 2,
-          responsible_id: 6,
-          approved_at: "2026-03-17T10:00:00+00:00",
-          solved_at: null,
-          close_reason: null,
-          cancel_reason: null,
-          reopen_reason: null,
-          attachments: [],
-          comments: [],
-          histories: [],
-          abilities: {
-            view: true,
-            update: true,
-            delete: false,
-            comment: true,
-            change_status: true,
-            assign_responsible: true,
-            cancel: true,
-            close: true,
-            reopen: false,
-            add_internal_note: true,
-          },
-          created_at: "2026-03-17T10:00:00+00:00",
-          updated_at: "2026-03-17T11:00:00+00:00",
-        },
+        data: buildTicketDetailResponse(),
       },
     });
 
@@ -343,5 +301,44 @@ describe("helpdesk service", () => {
         },
       }
     );
+  });
+
+  it("updates ticket with multipart when only existing attachments are retained", async () => {
+    mockApi.patch.mockResolvedValue({
+      data: {
+        data: buildTicketDetailResponse(),
+      },
+    });
+
+    await updateHelpdeskTicket(99, {
+      title: "Updated",
+      description: "Updated desc",
+      existing_supporting_attachments: ["helpdesk/tickets/old.pdf"],
+    });
+
+    expect(mockApi.patch).toHaveBeenCalledWith(
+      "/admin/api/v1/helpdesk/tickets/99",
+      expect.any(MockFormData),
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+  });
+
+  it("parses detail response when backend returns bare ticket resource", async () => {
+    mockApi.get.mockResolvedValue({
+      data: buildTicketDetailResponse({
+        id: 77,
+        title: "Bare response",
+      }),
+    });
+
+    const result = await getHelpdeskTicket(77);
+
+    expect(mockApi.get).toHaveBeenCalledWith("/admin/api/v1/helpdesk/tickets/77");
+    expect(result.id).toBe(77);
+    expect(result.title).toBe("Bare response");
   });
 });

@@ -1,4 +1,4 @@
-import { SheetHeader, SheetModal, SheetScrollView, SheetView } from "@/components/ui/BottomSheet";
+import { SheetHeader, SheetModal, SheetScrollView, SheetView } from "@/components/ui/bottom-sheet";
 import { useMoreServicesStore } from "@/store/useMoreServicesStore";
 import React, { useEffect, useRef, useMemo } from "react";
 import { View } from "react-native";

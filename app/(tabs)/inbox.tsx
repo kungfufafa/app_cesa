@@ -1,6 +1,5 @@
 import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -12,10 +11,12 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 import { HelpdeskSelectionModal } from "@/components/features/helpdesk/HelpdeskSelectionModal";
 import { HelpdeskTicketCard } from "@/components/features/helpdesk/HelpdeskTicketCard";
-import { SheetHeader, SheetModal, SheetView } from "@/components/ui/BottomSheet";
-import { Button } from "@/components/ui/Button";
+import { SheetHeader, SheetModal, SheetView } from "@/components/ui/bottom-sheet";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { useHelpdeskMeta, useHelpdeskTicketList } from "@/hooks/helpdesk/useHelpdeskQueries";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -180,30 +181,26 @@ export default function InboxScreen() {
           ) : null}
 
           {isInitialLoading ? (
-            <View className="py-20 items-center">
-              <ActivityIndicator size="large" color="#2563eb" />
-            </View>
+            <Spinner className="py-20" size="large" color="#2563eb" />
           ) : metaError || listQuery.error ? (
-            <View className="rounded-[24px] border border-border bg-card px-5 py-10 items-center">
-              <IconSymbol name="nosign" size={42} color="#ef4444" />
-              <Text className="font-semibold mt-4">Gagal memuat helpdesk</Text>
-              <Text className="text-sm text-muted-foreground text-center mt-2">
-                Coba muat ulang halaman atau periksa koneksi internet Anda.
-              </Text>
-              <Button className="mt-5" onPress={() => void Promise.all([listQuery.refetch()])}>
-                <Text className="text-primary-foreground font-bold">Coba Lagi</Text>
-              </Button>
-            </View>
+            <EmptyState
+              className="rounded-[24px] border border-border bg-card px-5 py-10"
+              icon={<IconSymbol name="nosign" size={42} color="#ef4444" />}
+              title="Gagal memuat helpdesk"
+              description="Coba muat ulang halaman atau periksa koneksi internet Anda."
+              action={
+                <Button className="mt-2" onPress={() => void Promise.all([listQuery.refetch()])}>
+                  <Text className="text-primary-foreground font-bold">Coba Lagi</Text>
+                </Button>
+              }
+            />
           ) : tickets.length === 0 ? (
-            <View className="rounded-[24px] border border-dashed border-border px-5 py-16 items-center bg-card">
-              <View className="w-16 h-16 rounded-full bg-secondary items-center justify-center mb-4">
-                <IconSymbol name="tray.fill" size={30} color="#71717a" />
-              </View>
-              <Text className="font-semibold text-lg">Belum ada tiket</Text>
-              <Text className="text-sm text-muted-foreground text-center mt-2">
-                Tiket helpdesk yang sesuai pencarian dan filter akan muncul di sini.
-              </Text>
-            </View>
+            <EmptyState
+              className="rounded-[24px] border border-dashed border-border bg-card px-5 py-16"
+              icon={<IconSymbol name="tray.fill" size={30} color="#71717a" />}
+              title="Belum ada tiket"
+              description="Tiket helpdesk yang sesuai pencarian dan filter akan muncul di sini."
+            />
           ) : (
             <View className="gap-3">
               {tickets.map((ticket) => (

@@ -1,11 +1,11 @@
 import React from "react";
-import { View, FlatList, TouchableOpacity, Pressable } from "react-native";
+import { View, FlatList, Pressable } from "react-native";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { Text } from "@/components/ui/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { openExternalUrl } from "@/lib/open-url";
-import { LinearGradient } from "expo-linear-gradient";
 import formTransferData from "@/assets/data/form-transfer.json";
 
 type FormLink = {
@@ -70,30 +70,7 @@ export default function FormTransferScreen() {
   return (
     <View className="flex-1 bg-background">
       <Stack.Screen options={{ headerShown: false }} />
-
-      <LinearGradient
-        colors={["#3b82f6", "#60a5fa", "#93c5fd"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        className="px-4"
-        style={{ paddingTop: insets.top, paddingBottom: 8 }}
-      >
-        <View className="flex-row items-center">
-          <Pressable
-            className="w-9 h-9 rounded-full bg-white/20 items-center justify-center"
-            onPress={() => router.back()}
-            android_ripple={{ color: "rgba(255,255,255,0.2)", borderless: true }}
-            accessibilityRole="button"
-            hitSlop={8}
-          >
-            <IconSymbol name="chevron.left" size={20} color="#fff" />
-          </Pressable>
-          <View className="flex-1 items-center">
-            <Text className="text-white text-base font-semibold">Form Transfer</Text>
-          </View>
-          <View className="w-9 h-9" />
-        </View>
-      </LinearGradient>
+      <ScreenHeader title="Form Transfer" onBackPress={() => router.back()} />
 
       <View className="px-4 pt-2 pb-2 bg-background">
         <View className="flex-row bg-muted/40 rounded-xl p-1 border border-border">
@@ -157,9 +134,8 @@ export default function FormTransferScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
+          <Pressable
             className="flex-row items-center p-4 bg-card rounded-xl border border-border active:bg-secondary/50"
-            activeOpacity={0.7}
             onPress={() => handlePress(item.url)}
           >
             <View className="flex-1 mr-2">
@@ -171,7 +147,7 @@ export default function FormTransferScreen() {
               </Text>
             </View>
             <IconSymbol name="chevron.right" size={20} color="#a1a1aa" />
-          </TouchableOpacity>
+          </Pressable>
         )}
       />
     </View>

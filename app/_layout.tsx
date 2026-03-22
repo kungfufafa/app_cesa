@@ -1,15 +1,11 @@
 import "../global.css";
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
+import { ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { useEffect, useRef } from "react";
+import { View } from "react-native";
 import {
   useFonts,
   Inter_400Regular,
@@ -23,12 +19,15 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useAuthBottomSheet } from "@/store/useAuthBottomSheet";
 import { AuthBottomSheet } from "@/components/features/auth/AuthBottomSheet";
 import { RequestBottomSheet } from "@/components/features/request/RequestBottomSheet";
 import { Colors } from "@/constants/theme";
 import { OfflineBanner } from "@/components/features/network/OfflineBanner";
+import { NAV_THEME } from "@/lib/theme";
 import { initializeNotificationHandler } from "@/services/presensi/notifications";
-import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { Spinner } from "@/components/ui/spinner";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -47,7 +46,11 @@ const queryClient = new QueryClient({
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const isLoading = useAuthStore((s) => s.isLoading);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authNotice = useAuthStore((s) => s.authNotice);
   const restoreSession = useAuthStore((s) => s.restoreSession);
+  const openAuthSheet = useAuthBottomSheet((s) => s.open);
+  const previousIsAuthenticatedRef = useRef(false);
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -62,10 +65,25 @@ function RootLayoutNav() {
     initializeNotificationHandler();
   }, [restoreSession]);
 
+  useEffect(() => {
+    if (authNotice && !isAuthenticated) {
+      openAuthSheet();
+    }
+  }, [authNotice, isAuthenticated, openAuthSheet]);
+
+  useEffect(() => {
+    const wasAuthenticated = previousIsAuthenticatedRef.current;
+    if (wasAuthenticated && !isAuthenticated) {
+      queryClient.clear();
+    }
+
+    previousIsAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated]);
+
   if (!fontsLoaded || isLoading) {
     return (
       <View className="flex-1 justify-center items-center">
-        <ActivityIndicator
+        <Spinner
           size="large"
           color={Colors[colorScheme ?? "light"].tint}
         />
@@ -74,7 +92,7 @@ function RootLayoutNav() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={NAV_THEME[colorScheme ?? "light"]}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>

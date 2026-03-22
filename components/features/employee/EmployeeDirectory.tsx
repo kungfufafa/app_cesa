@@ -1,6 +1,6 @@
 import React from "react";
 import { FlatList, View } from "react-native";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmployeeListItem } from "@/components/features/employee/EmployeeListItem";

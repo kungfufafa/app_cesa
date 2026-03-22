@@ -1,28 +1,38 @@
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import {
+  SheetBackdrop,
   SheetHeader,
   SheetModal,
   SheetScrollView,
   SheetView,
-} from "@/components/ui/BottomSheet";
+} from "@/components/ui/bottom-sheet";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Label } from "@/components/ui/label";
-import { SheetTextInput } from "@/components/ui/SheetTextInput";
+import { SheetTextInput } from "@/components/ui/sheet-text-input";
+import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { useAuthBottomSheet } from "@/store/useAuthBottomSheet";
 import { useAuthStore } from "@/store/useAuthStore";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Keyboard, Pressable, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Keyboard, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import {
+  BottomSheetModal,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
 
 export function AuthBottomSheet() {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const { isOpen, close, executeCallback } = useAuthBottomSheet();
   const signIn = useAuthStore((s) => s.signIn);
+  const authNotice = useAuthStore((s) => s.authNotice);
+  const clearAuthNotice = useAuthStore((s) => s.clearAuthNotice);
   const insets = useSafeAreaInsets();
 
-  const snapPoints = useMemo(() => ["60%", "80%"], []);
+  const snapPoints = useMemo(
+    () => [authNotice ? "78%" : "72%"],
+    [authNotice]
+  );
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,15 +61,19 @@ export function AuthBottomSheet() {
       .filter(Boolean);
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password;
+
+    if (!normalizedEmail || !normalizedPassword) {
       setErrors(["Mohon isi semua field"]);
       return;
     }
     setErrors([]);
     setIsLoading(true);
     try {
-      const result = await signIn({ email, password });
+      const result = await signIn({ email: normalizedEmail, password: normalizedPassword });
       if (result.ok) {
+        clearAuthNotice();
         close();
         executeCallback();
         resetForm();
@@ -88,10 +102,26 @@ export function AuthBottomSheet() {
     setIsPasswordVisible((current) => !current);
   };
 
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <SheetBackdrop
+        {...props}
+        pressBehavior={isLoading ? "none" : "close"}
+      />
+    ),
+    [isLoading]
+  );
+
   return (
     <SheetModal
       ref={bottomSheetRef}
       snapPoints={snapPoints}
+      enablePanDownToClose={!isLoading}
+      enableHandlePanningGesture={!isLoading}
+      enableContentPanningGesture={false}
+      enableOverDrag={false}
+      keyboardBehavior="interactive"
+      backdropComponent={renderBackdrop}
       onDismiss={handleDismiss}
     >
       <SheetView className="flex-1 px-6 pt-2">
@@ -104,19 +134,28 @@ export function AuthBottomSheet() {
             title="Login untuk melanjutkan"
             description="Masuk ke akun untuk akses fitur"
             className="mb-6"
-            onClose={handleDismiss}
+            onClose={isLoading ? undefined : handleDismiss}
           />
 
           <View className="gap-4">
+            {authNotice ? (
+              <View className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <Text className="text-sm leading-6 text-amber-900">{authNotice}</Text>
+              </View>
+            ) : null}
+
             <View className="gap-1.5">
               <Label>Email</Label>
               <SheetTextInput
                 placeholder="name@mail.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="emailAddress"
+                autoComplete="email"
                 value={email}
                 onChangeText={setEmail}
-                className="border border-border rounded-lg px-4 py-3 text-foreground bg-background"
+                className="px-4 py-3"
               />
             </View>
 
@@ -126,9 +165,12 @@ export function AuthBottomSheet() {
                 <SheetTextInput
                   placeholder="••••••••"
                   secureTextEntry={!isPasswordVisible}
+                  autoCorrect={false}
+                  textContentType="password"
+                  autoComplete="password"
                   value={password}
                   onChangeText={setPassword}
-                  className="flex-1 text-foreground"
+                  className="flex-1"
                 />
                 <Pressable
                   onPress={togglePasswordVisibility}
@@ -167,7 +209,7 @@ export function AuthBottomSheet() {
               className="mt-2"
             >
               {isLoading ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <Spinner color="#fff" size="small" />
               ) : (
                 <Text className="text-primary-foreground font-bold">
                   Masuk
@@ -176,8 +218,18 @@ export function AuthBottomSheet() {
             </Button>
 
             <Text className="text-center text-muted-foreground text-sm mt-2">
-              Lupa password? Hubungi Admin
+              Sesi login akan terhubung ke perangkat ini. Untuk reset password, hubungi Admin.
             </Text>
+
+            {authNotice ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onPress={clearAuthNotice}
+              >
+                <Text className="text-muted-foreground">Tutup pesan</Text>
+              </Button>
+            ) : null}
           </View>
         </SheetScrollView>
       </SheetView>

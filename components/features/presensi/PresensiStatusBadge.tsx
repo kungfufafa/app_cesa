@@ -1,11 +1,14 @@
 import React from "react";
-import { View } from "react-native";
+
+import { Badge } from "@/components/ui/badge";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 
 export type PresensiStatus =
   | "present"
   | "hadir"
+  | "pending_check_out"
+  | "early_leave"
   | "late"
   | "terlambat"
   | "absent"
@@ -41,6 +44,22 @@ function getStatusConfig(status: string, isLate?: boolean) {
       containerClass: "bg-emerald-100",
       textClass: "text-emerald-700",
       label: "Hadir",
+    };
+  }
+
+  if (s === "pending_check_out") {
+    return {
+      containerClass: "bg-sky-100",
+      textClass: "text-sky-700",
+      label: "Belum Pulang",
+    };
+  }
+
+  if (s === "early_leave") {
+    return {
+      containerClass: "bg-amber-100",
+      textClass: "text-amber-700",
+      label: "Pulang Awal",
     };
   }
 
@@ -99,9 +118,9 @@ export function PresensiStatusBadge({
   const config = getStatusConfig(status, isLate);
 
   return (
-    <View
+    <Badge
       className={cn(
-        "px-3 py-1.5 rounded-full items-center justify-center min-w-[72px]",
+        "min-w-[72px] items-center justify-center px-3 py-1.5",
         config.containerClass,
         className,
       )}
@@ -109,6 +128,6 @@ export function PresensiStatusBadge({
       <Text className={cn("text-xs font-bold capitalize", config.textClass)}>
         {config.label}
       </Text>
-    </View>
+    </Badge>
   );
 }

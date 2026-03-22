@@ -3,12 +3,14 @@ import dayjs from "@/lib/dates";
 import { parseApiEnvelope, parseApiResult } from "@/services/api-response";
 import { z } from "zod";
 
-const nullableStringSchema = z.string().nullable();
+const nullableStringSchema = z.string().nullable().optional();
 const numberSchema = z.coerce.number();
 const integerSchema = z.coerce.number().int();
+const nullableNumberSchema = z.union([numberSchema, z.null()]).optional();
+const nullableIntegerSchema = z.union([integerSchema, z.null()]).optional();
 const booleanishSchema = z
   .union([z.boolean(), z.number().int(), z.string()])
-  .transform((value) => {
+  .transform((value: boolean | number | string) => {
     if (typeof value === "boolean") return value;
     if (typeof value === "number") return value === 1;
 
@@ -16,54 +18,111 @@ const booleanishSchema = z
     return normalized === "1" || normalized === "true" || normalized === "yes";
   });
 
-const presensiTodayApiSchema = z.object({
-  today: z
-    .object({
-      start_time: nullableStringSchema,
-      end_time: nullableStringSchema,
-    })
-    .nullable(),
-  this_month: z
-    .array(
-      z.object({
-        start_time: nullableStringSchema,
-        end_time: nullableStringSchema,
-        date: z.string().min(1),
-      })
-    )
-    .default([]),
-});
+const attendanceScheduleSnapshotSchema = z
+  .object({
+    id: nullableIntegerSchema,
+    start_time: nullableStringSchema,
+    end_time: nullableStringSchema,
+    latitude: nullableNumberSchema,
+    longitude: nullableNumberSchema,
+    office_name: nullableStringSchema,
+    shift_name: nullableStringSchema,
+    early_checkout_tolerance_minutes: nullableIntegerSchema,
+  })
+  .passthrough();
 
-const presensiHistoryRecordSchema = z.object({
-  start_time: nullableStringSchema,
-  end_time: nullableStringSchema,
-  date: z.string().min(1),
-});
+const attendanceTodayItemSchema = z
+  .object({
+    id: nullableIntegerSchema,
+    date: nullableStringSchema,
+    start_time: nullableStringSchema,
+    end_time: nullableStringSchema,
+    check_in_status: nullableStringSchema,
+    check_out_status: nullableStringSchema,
+    attendance_status: nullableStringSchema,
+    is_late: booleanishSchema.optional(),
+    is_early_leave: booleanishSchema.optional(),
+    work_duration: nullableStringSchema,
+    schedule: attendanceScheduleSnapshotSchema.nullable().optional(),
+  })
+  .passthrough();
 
-const scheduleResponseSchema = z.object({
-  id: integerSchema,
-  is_wfa: booleanishSchema,
-  is_banned: booleanishSchema,
-  office: z.object({
+const attendanceHistoryItemSchema = z
+  .object({
+    id: nullableIntegerSchema,
+    date: z.string().min(1),
+    start_time: nullableStringSchema,
+    end_time: nullableStringSchema,
+    check_in_status: nullableStringSchema,
+    check_out_status: nullableStringSchema,
+    attendance_status: nullableStringSchema,
+    is_late: booleanishSchema.optional(),
+  })
+  .passthrough();
+
+const scheduleOfficeSchema = z
+  .object({
+    id: nullableIntegerSchema,
+    name: nullableStringSchema,
+    latitude: nullableNumberSchema,
+    longitude: nullableNumberSchema,
+    radius: nullableNumberSchema,
+  })
+  .passthrough();
+
+const scheduleShiftSchema = z
+  .object({
+    id: nullableIntegerSchema,
+    name: nullableStringSchema,
+    start_time: nullableStringSchema,
+    end_time: nullableStringSchema,
+  })
+  .passthrough();
+
+const scheduleApiSchema = z
+  .object({
     id: integerSchema,
-    name: z.string().min(1),
-    latitude: numberSchema,
-    longitude: numberSchema,
-    radius: numberSchema,
-  }),
-  shift: z.object({
-    id: integerSchema,
-    name: z.string().min(1),
-    start_time: z.string().min(1),
-    end_time: z.string().min(1),
-  }),
-});
+    is_wfa: booleanishSchema.optional(),
+    is_banned: booleanishSchema.optional(),
+    office: scheduleOfficeSchema.nullable().optional(),
+    shift: scheduleShiftSchema.nullable().optional(),
+    office_id: nullableIntegerSchema,
+    office_name: nullableStringSchema,
+    office_radius: nullableNumberSchema,
+    latitude: nullableNumberSchema,
+    longitude: nullableNumberSchema,
+    office_latitude: nullableNumberSchema,
+    office_longitude: nullableNumberSchema,
+    shift_id: nullableIntegerSchema,
+    shift_name: nullableStringSchema,
+    start_time: nullableStringSchema,
+    end_time: nullableStringSchema,
+    check_in_opens_at: nullableStringSchema,
+    schedule_start_at: nullableStringSchema,
+    schedule_end_at: nullableStringSchema,
+    late_tolerance_minutes: nullableIntegerSchema,
+    early_check_out_tolerance_minutes: nullableIntegerSchema,
+    early_checkout_tolerance_minutes: nullableIntegerSchema,
+  })
+  .passthrough();
+
+const presensiTodayPayloadSchema = z
+  .object({
+    today: attendanceTodayItemSchema.nullable().optional(),
+    today_state: nullableStringSchema,
+    active_schedule: scheduleApiSchema.nullable().optional(),
+    this_month: z.array(attendanceHistoryItemSchema).default([]),
+  })
+  .passthrough();
 
 export type PresensiHariIniResponse = {
   check_in_time: string | null;
   check_out_time: string | null;
   date: string;
-  status: string; // 'present', 'absent', 'late', etc.
+  status: string;
+  is_late: boolean;
+  is_early_leave: boolean;
+  work_duration: string | null;
 };
 
 export type PresensiRecord = {
@@ -76,6 +135,7 @@ export type PresensiRecord = {
 };
 
 export type PresensiSubmission = {
+  action: "clock_in" | "clock_out";
   photoUri: string;
   latitude: number;
   longitude: number;
@@ -87,36 +147,101 @@ export type ScheduleResponse = {
   is_wfa: boolean;
   is_banned: boolean;
   office: {
-    id: number;
+    id: number | null;
     name: string;
-    latitude: number;
-    longitude: number;
-    radius: number;
+    latitude: number | null;
+    longitude: number | null;
+    radius: number | null;
   };
   shift: {
-    id: number;
+    id: number | null;
     name: string;
-    start_time: string;
-    end_time: string;
+    start_time: string | null;
+    end_time: string | null;
+  };
+  check_in_opens_at: string | null;
+  schedule_start_at: string | null;
+  schedule_end_at: string | null;
+  late_tolerance_minutes: number | null;
+  early_check_out_tolerance_minutes: number | null;
+};
+
+const PRESENSI_BASE_PATH = "/admin/api/v1/presensi";
+
+const normalizeNumber = (value: number | null | undefined): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;
+
+const normalizeSchedule = (
+  schedule: z.infer<typeof scheduleApiSchema>,
+  fallback?: z.infer<typeof attendanceScheduleSnapshotSchema> | null
+): ScheduleResponse => {
+  const office = schedule.office ?? null;
+  const shift = schedule.shift ?? null;
+
+  return {
+    id: schedule.id,
+    is_wfa: schedule.is_wfa ?? false,
+    is_banned: schedule.is_banned ?? false,
+    office: {
+      id: office?.id ?? schedule.office_id ?? null,
+      name: office?.name ?? schedule.office_name ?? fallback?.office_name ?? "Lokasi kerja",
+      latitude: normalizeNumber(
+        office?.latitude ??
+          schedule.latitude ??
+          schedule.office_latitude ??
+          fallback?.latitude
+      ),
+      longitude: normalizeNumber(
+        office?.longitude ??
+          schedule.longitude ??
+          schedule.office_longitude ??
+          fallback?.longitude
+      ),
+      radius: normalizeNumber(office?.radius ?? schedule.office_radius ?? null),
+    },
+    shift: {
+      id: shift?.id ?? schedule.shift_id ?? null,
+      name: shift?.name ?? schedule.shift_name ?? fallback?.shift_name ?? "Jadwal Kerja",
+      start_time: shift?.start_time ?? schedule.start_time ?? fallback?.start_time ?? null,
+      end_time: shift?.end_time ?? schedule.end_time ?? fallback?.end_time ?? null,
+    },
+    check_in_opens_at: schedule.check_in_opens_at ?? null,
+    schedule_start_at: schedule.schedule_start_at ?? null,
+    schedule_end_at: schedule.schedule_end_at ?? null,
+    late_tolerance_minutes: schedule.late_tolerance_minutes ?? null,
+    early_check_out_tolerance_minutes:
+      schedule.early_check_out_tolerance_minutes ??
+      schedule.early_checkout_tolerance_minutes ??
+      fallback?.early_checkout_tolerance_minutes ??
+      null,
   };
 };
 
-export async function getPresensiHariIni(): Promise<PresensiHariIniResponse> {
-  const response = await api.get("/api/get-attendance-today");
-  const payload = parseApiEnvelope(
-    presensiTodayApiSchema,
+const fetchTodayPayload = async () => {
+  const response = await api.get(`${PRESENSI_BASE_PATH}/attendance/today`);
+  return parseApiEnvelope(
+    presensiTodayPayloadSchema,
     response.data,
     "Gagal memuat data presensi."
   );
+};
 
+export async function getPresensiHariIni(): Promise<PresensiHariIniResponse> {
+  const payload = await fetchTodayPayload();
   const today = payload.today;
-  const todayDate = dayjs().format("YYYY-MM-DD");
 
   return {
     check_in_time: today?.start_time ?? null,
     check_out_time: today?.end_time ?? null,
-    date: todayDate,
-    status: today ? "present" : "absent",
+    date: today?.date ?? dayjs().format("YYYY-MM-DD"),
+    status:
+      today?.attendance_status ??
+      payload.today_state ??
+      (today ? "present" : "absent"),
+    is_late: today?.is_late ?? today?.check_in_status === "late",
+    is_early_leave:
+      today?.is_early_leave ?? today?.check_out_status === "early_leave",
+    work_duration: today?.work_duration ?? null,
   };
 }
 
@@ -125,21 +250,23 @@ export async function getRiwayatPresensi(
   year: number
 ): Promise<PresensiRecord[]> {
   const response = await api.get(
-    `/api/get-attendance-by-month-year/${month}/${year}`
+    `${PRESENSI_BASE_PATH}/attendance/history/${month}/${year}`
   );
   const records = parseApiEnvelope(
-    z.array(presensiHistoryRecordSchema),
+    z.array(attendanceHistoryItemSchema),
     response.data,
     "Gagal memuat riwayat presensi."
   );
 
-  return records.map((record, index) => ({
-    id: record.date || index,
+  return records.map((record: z.infer<typeof attendanceHistoryItemSchema>, index: number) => ({
+    id: record.id ?? record.date ?? index,
     date: record.date,
     check_in_time: record.start_time ?? null,
     check_out_time: record.end_time ?? null,
-    status: record.start_time ? "present" : "absent",
-    is_late: false,
+    status:
+      record.attendance_status ??
+      (record.start_time ? "present" : "absent"),
+    is_late: record.is_late ?? record.check_in_status === "late",
   }));
 }
 
@@ -168,7 +295,12 @@ export async function submitPresensi(
     type,
   } as unknown as Blob);
 
-  const response = await api.post("/api/store-attendance", formData, {
+  const endpoint =
+    data.action === "clock_out"
+      ? `${PRESENSI_BASE_PATH}/attendance/check-out`
+      : `${PRESENSI_BASE_PATH}/attendance/check-in`;
+
+  const response = await api.post(endpoint, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -178,20 +310,67 @@ export async function submitPresensi(
 }
 
 export async function getSchedule(): Promise<ScheduleResponse> {
-  const response = await api.get("/api/get-schedule");
-  return parseApiEnvelope(
-    scheduleResponseSchema.nullable().transform((value, ctx) => {
-      if (!value) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Jadwal tidak tersedia.",
-        });
-        return z.NEVER;
-      }
-
-      return value;
-    }),
+  const response = await api.get(`${PRESENSI_BASE_PATH}/schedule`);
+  const payload = parseApiEnvelope(
+    scheduleApiSchema,
     response.data,
     "Gagal memuat jadwal."
   );
+  const normalizedSchedule = normalizeSchedule(payload);
+
+  if (
+    normalizedSchedule.is_wfa ||
+    (normalizedSchedule.office.latitude !== null &&
+      normalizedSchedule.office.longitude !== null)
+  ) {
+    return normalizedSchedule;
+  }
+
+  try {
+    const todayPayload = await fetchTodayPayload();
+    if (todayPayload.active_schedule) {
+      return normalizeSchedule(
+        todayPayload.active_schedule,
+        todayPayload.today?.schedule ?? null
+      );
+    }
+
+    if (todayPayload.today?.schedule) {
+      return {
+        ...normalizedSchedule,
+        office: {
+          ...normalizedSchedule.office,
+          name:
+            todayPayload.today.schedule.office_name ??
+            normalizedSchedule.office.name,
+          latitude:
+            normalizedSchedule.office.latitude ??
+            todayPayload.today.schedule.latitude ??
+            null,
+          longitude:
+            normalizedSchedule.office.longitude ??
+            todayPayload.today.schedule.longitude ??
+            null,
+        },
+        shift: {
+          ...normalizedSchedule.shift,
+          name:
+            todayPayload.today.schedule.shift_name ??
+            normalizedSchedule.shift.name,
+          start_time:
+            normalizedSchedule.shift.start_time ??
+            todayPayload.today.schedule.start_time ??
+            null,
+          end_time:
+            normalizedSchedule.shift.end_time ??
+            todayPayload.today.schedule.end_time ??
+            null,
+        },
+      };
+    }
+  } catch {
+    return normalizedSchedule;
+  }
+
+  return normalizedSchedule;
 }

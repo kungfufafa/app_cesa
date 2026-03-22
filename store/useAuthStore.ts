@@ -1,8 +1,16 @@
 import { create } from 'zustand';
 import axios from 'axios';
 import { setAuthToken, setOnUnauthorized } from '../services/api';
-import { login, LoginCredentials, AuthResponse, logout } from '../services/auth';
+import {
+  getCurrentUser,
+  login,
+  LoginCredentials,
+  AuthResponse,
+  logout,
+  logoutAll,
+} from '../services/auth';
 import * as SecureStore from '../lib/secure-storage';
+import { useAuthBottomSheet } from './useAuthBottomSheet';
 
 const extractTokenString = (token: AuthResponse['token']): string | null => {
   if (typeof token === 'string' && token.length > 0) {
@@ -34,6 +42,10 @@ const isServerError = (error: unknown) =>
 const isNetworkError = (error: unknown) =>
   axios.isAxiosError(error) && !error.response;
 
+const isUnauthorizedError = (error: unknown) =>
+  axios.isAxiosError(error) &&
+  [401, 403].includes(error.response?.status ?? 0);
+
 type ApiErrorPayload = {
   message?: string;
   errors?: Record<string, string[] | string>;
@@ -56,6 +68,13 @@ type AuthError = {
 
 type SignInResult = { ok: true } | { ok: false; error: AuthError };
 
+const normalizeAuthMessage = (value: string) => value.trim().toLowerCase();
+
+const isInactiveAccountMessage = (value: string) => {
+  const normalized = normalizeAuthMessage(value);
+  return normalized.includes('inactive') || normalized.includes('nonaktif');
+};
+
 const extractApiErrorMessages = (error: unknown): string[] => {
   if (!axios.isAxiosError(error)) return [];
   const data = error.response?.data;
@@ -76,6 +95,42 @@ const extractApiErrorMessages = (error: unknown): string[] => {
   }
 
   return Array.from(new Set(messages));
+};
+
+const readRetryAfterSeconds = (error: unknown): number | null => {
+  if (!axios.isAxiosError(error)) return null;
+
+  const retryAfterHeader = error.response?.headers?.['retry-after'];
+  if (!retryAfterHeader) return null;
+
+  const rawValue = Array.isArray(retryAfterHeader)
+    ? retryAfterHeader[0]
+    : String(retryAfterHeader);
+  const seconds = Number(rawValue);
+  if (Number.isFinite(seconds) && seconds > 0) {
+    return seconds;
+  }
+
+  const retryDate = new Date(rawValue);
+  if (Number.isNaN(retryDate.getTime())) {
+    return null;
+  }
+
+  const diffInSeconds = Math.ceil((retryDate.getTime() - Date.now()) / 1000);
+  return diffInSeconds > 0 ? diffInSeconds : null;
+};
+
+const formatRetryAfterMessage = (seconds: number | null) => {
+  if (!seconds) {
+    return 'Terlalu banyak percobaan. Coba lagi nanti.';
+  }
+
+  if (seconds < 60) {
+    return `Terlalu banyak percobaan. Coba lagi dalam ${seconds} detik.`;
+  }
+
+  const minutes = Math.ceil(seconds / 60);
+  return `Terlalu banyak percobaan. Coba lagi dalam ${minutes} menit.`;
 };
 
 const toAuthErrorMessages = (authError: AuthError): string[] => {
@@ -104,10 +159,14 @@ const buildAuthError = (error: unknown): AuthError => {
     }
 
     if (status === 400 || status === 422) {
+      const hasInactiveMessage = apiMessages.some(isInactiveAccountMessage);
       return {
-        type: 'validation',
+        type: hasInactiveMessage ? 'auth' : 'validation',
         status,
-        messages: apiMessages.length > 0 ? apiMessages : ['Data tidak valid. Coba lagi.'],
+        messages:
+          apiMessages.length > 0
+            ? apiMessages
+            : [hasInactiveMessage ? 'Akun Anda sedang nonaktif.' : 'Data tidak valid. Coba lagi.'],
       };
     }
 
@@ -115,7 +174,15 @@ const buildAuthError = (error: unknown): AuthError => {
       return {
         type: 'rate_limit',
         status,
-        message: 'Terlalu banyak percobaan. Coba lagi nanti.',
+        message: formatRetryAfterMessage(readRetryAfterSeconds(error)),
+      };
+    }
+
+    if (error.code === 'ECONNABORTED') {
+      return {
+        type: 'network',
+        status,
+        message: 'Permintaan login timeout. Coba lagi sebentar lagi.',
       };
     }
 
@@ -200,21 +267,52 @@ const clearStoredAuth = async () => {
   setAuthToken(null);
 };
 
+const isActiveUser = (user: AuthResponse['user'] | null | undefined) => user?.is_active !== false;
+
+const persistAuthSession = async (
+  token: string,
+  user: AuthResponse['user']
+) => {
+  try {
+    await SecureStore.setItemAsync('token', token);
+    await SecureStore.setItemAsync('user', JSON.stringify(user));
+    return true;
+  } catch (error) {
+    if (__DEV__) console.warn('Failed to persist auth session', error);
+    return false;
+  }
+};
+
+const persistCachedUser = async (user: AuthResponse['user']) => {
+  try {
+    await SecureStore.setItemAsync('user', JSON.stringify(user));
+    return true;
+  } catch (error) {
+    if (__DEV__) console.warn('Failed to persist cached user', error);
+    return false;
+  }
+};
+
 interface AuthState {
   token: string | null;
   user: AuthResponse['user'] | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  authNotice: string | null;
   signIn: (credentials: LoginCredentials) => Promise<SignInResult>;
   signOut: () => Promise<void>;
+  signOutAll: () => Promise<void>;
+  refreshCurrentUser: () => Promise<void>;
   restoreSession: () => Promise<void>;
+  clearAuthNotice: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
   user: null,
   isAuthenticated: false,
   isLoading: true,
+  authNotice: null,
   signIn: async (credentials) => {
     try {
       const response = await login(credentials);
@@ -222,14 +320,34 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (!token) {
         throw new Error('Login response missing token string');
       }
-      await SecureStore.setItemAsync('token', token);
-      await SecureStore.setItemAsync('user', JSON.stringify(response.user));
       setAuthToken(token);
+      const user = await getCurrentUser(token).catch(() => response.user);
+      if (!isActiveUser(user)) {
+        await clearStoredAuth();
+        set({
+          token: null,
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          authNotice: 'Akun Anda sedang nonaktif. Hubungi admin untuk bantuan.',
+        });
+        return {
+          ok: false,
+          error: {
+            type: 'auth',
+            message: 'Akun Anda sedang nonaktif. Hubungi admin untuk bantuan.',
+          },
+        };
+      }
+      const isPersisted = await persistAuthSession(token, user);
       set({
         token,
-        user: response.user,
+        user,
         isAuthenticated: true,
         isLoading: false,
+        authNotice: isPersisted
+          ? null
+          : 'Login berhasil, tetapi sesi ini tidak bisa disimpan permanen di perangkat.',
       });
       return { ok: true };
     } catch (error) {
@@ -245,8 +363,48 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (__DEV__) console.warn('Logout request failed', error);
     } finally {
       await clearStoredAuth();
-      set({ token: null, user: null, isAuthenticated: false });
+      set({ token: null, user: null, isAuthenticated: false, authNotice: null });
     }
+  },
+  signOutAll: async () => {
+    try {
+      await logoutAll();
+      await clearStoredAuth();
+      set({ token: null, user: null, isAuthenticated: false, authNotice: null });
+    } catch (error) {
+      if (__DEV__) console.warn('Logout all request failed', error);
+      throw error;
+    }
+  },
+  refreshCurrentUser: async () => {
+    const token = get().token;
+    if (!token) {
+      throw new Error('Sesi login tidak tersedia.');
+    }
+
+    const freshUser = await getCurrentUser(token);
+    if (!isActiveUser(freshUser)) {
+      await clearStoredAuth();
+      set({
+        token: null,
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        authNotice: 'Akun Anda sedang nonaktif. Hubungi admin untuk bantuan.',
+      });
+      throw new Error('Akun Anda sedang nonaktif. Hubungi admin untuk bantuan.');
+    }
+
+    const isPersisted = await persistCachedUser(freshUser);
+    set({
+      token,
+      user: freshUser,
+      isAuthenticated: true,
+      isLoading: false,
+      authNotice: isPersisted
+        ? null
+        : 'Data akun berhasil diperbarui, tetapi cache lokal perangkat gagal disimpan.',
+    });
   },
   restoreSession: async () => {
     try {
@@ -255,23 +413,86 @@ export const useAuthStore = create<AuthState>((set) => ({
         readCachedUser(),
       ]);
 
-      if (!storedToken || !cachedUser) {
+      if (!storedToken) {
         await clearStoredAuth();
-        set({ token: null, user: null, isAuthenticated: false, isLoading: false });
+        set({ token: null, user: null, isAuthenticated: false, isLoading: false, authNotice: null });
         return;
       }
 
       setAuthToken(storedToken);
-      set({ token: storedToken, user: cachedUser, isAuthenticated: true, isLoading: false });
+      try {
+        const freshUser = await getCurrentUser(storedToken);
+        if (!isActiveUser(freshUser)) {
+          await clearStoredAuth();
+          set({
+            token: null,
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            authNotice: 'Akun Anda sedang nonaktif. Hubungi admin untuk bantuan.',
+          });
+          return;
+        }
+        const isPersisted = await persistCachedUser(freshUser);
+        set({
+          token: storedToken,
+          user: freshUser,
+          isAuthenticated: true,
+          isLoading: false,
+          authNotice: isPersisted
+            ? null
+            : 'Sesi aktif dipulihkan, tetapi cache lokal perangkat gagal diperbarui.',
+        });
+      } catch (error) {
+        if (isUnauthorizedError(error)) {
+          await clearStoredAuth();
+          set({
+            token: null,
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            authNotice: 'Sesi login Anda telah berakhir. Silakan masuk lagi.',
+          });
+          return;
+        }
+
+        if (!cachedUser) {
+          await clearStoredAuth();
+          set({
+            token: null,
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            authNotice: 'Gagal memulihkan sesi login. Silakan masuk lagi.',
+          });
+          return;
+        }
+
+        set({
+          token: storedToken,
+          user: cachedUser,
+          isAuthenticated: true,
+          isLoading: false,
+          authNotice: 'Menggunakan data akun terakhir karena server sedang tidak dapat dijangkau.',
+        });
+      }
     } catch (e) {
       if (__DEV__) console.warn('Failed to restore token', e);
       await clearStoredAuth();
-      set({ token: null, user: null, isAuthenticated: false, isLoading: false });
+      set({ token: null, user: null, isAuthenticated: false, isLoading: false, authNotice: null });
     }
   },
+  clearAuthNotice: () => set({ authNotice: null }),
 }));
 
 // Auto-logout when API returns 401
 setOnUnauthorized(() => {
-  useAuthStore.setState({ token: null, user: null, isAuthenticated: false, isLoading: false });
+  useAuthStore.setState({
+    token: null,
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    authNotice: 'Sesi login Anda telah berakhir. Silakan masuk lagi.',
+  });
+  useAuthBottomSheet.getState().open();
 });

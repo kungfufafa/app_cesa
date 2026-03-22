@@ -1,13 +1,16 @@
-import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   SheetHeader,
   SheetModal,
   SheetScrollView,
   SheetView,
-} from "@/components/ui/BottomSheet";
+} from "@/components/ui/bottom-sheet";
+import { EmptyState } from "@/components/ui/empty-state";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ScreenHeader } from "@/components/ui/ScreenHeader";
-import { SheetTextInput } from "@/components/ui/SheetTextInput";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { SheetTextInput } from "@/components/ui/sheet-text-input";
+import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -20,16 +23,9 @@ import {
 } from "@/lib/request-attachment";
 import { getStatusBadgeClasses, getStatusLabel } from "@/lib/status-helpers";
 import { formatTimeString } from "@/lib/dates";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import React, { useMemo, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Pressable,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, FlatList, Pressable, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
@@ -107,25 +103,26 @@ export default function OvertimeRequestScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={["bottom"]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <ScreenHeader title="Pengajuan Lembur" />
+      <ScreenHeader title="Pengajuan Lembur" onBackPress={() => router.back()} />
 
       <View className="flex-1 px-4 pt-4">
         <View className="flex-row items-center justify-between">
           <Text className="text-lg font-bold">Riwayat Pengajuan</Text>
-          <TouchableOpacity
+          <Button
+            variant="secondary"
+            size="sm"
             onPress={() => void refetch()}
             disabled={isRefreshingList}
-            className="px-3 py-1.5 rounded-lg bg-secondary border border-border"
-            activeOpacity={0.75}
+            className="rounded-lg border border-border"
           >
             {isRefreshingList ? (
-              <ActivityIndicator size="small" />
+              <Spinner size="small" />
             ) : (
               <Text variant="muted" className="text-xs font-semibold">
                 Muat Ulang
               </Text>
             )}
-          </TouchableOpacity>
+          </Button>
         </View>
 
         <FlatList
@@ -136,15 +133,16 @@ export default function OvertimeRequestScreen() {
           ItemSeparatorComponent={() => <View className="h-3" />}
           ListEmptyComponent={
             isLoadingList ? (
-              <View className="py-8 items-center">
-                <ActivityIndicator />
-              </View>
+              <Spinner className="py-8" />
             ) : (
-              <Text variant="muted">
-                {hasLoadError
-                  ? "Riwayat lembur belum dapat dimuat."
-                  : "Belum ada pengajuan lembur."}
-              </Text>
+              <EmptyState
+                className="py-8"
+                title={
+                  hasLoadError
+                    ? "Riwayat lembur belum dapat dimuat."
+                    : "Belum ada pengajuan lembur."
+                }
+              />
             )
           }
           renderItem={({ item }) => {
@@ -154,11 +152,11 @@ export default function OvertimeRequestScreen() {
               <View className="rounded-xl border border-border bg-card p-4">
                 <View className="flex-row items-center justify-between mb-2">
                   <Text className="font-semibold text-foreground">{item.date}</Text>
-                  <View className={`rounded-full px-2.5 py-1 ${badgeClass.container}`}>
-                    <Text className={`text-xs font-semibold ${badgeClass.text}`}>
+                  <Badge variant="secondary" className={badgeClass.container}>
+                    <Text className={badgeClass.text}>
                       {getStatusLabel(item.status)}
                     </Text>
-                  </View>
+                  </Badge>
                 </View>
                 <Text variant="muted" className="text-sm">
                   Jam: {formatTimeString(item.start_time)} - {formatTimeString(item.end_time)}
@@ -212,7 +210,7 @@ export default function OvertimeRequestScreen() {
                   onChangeText={setDate}
                   placeholder="YYYY-MM-DD"
                   placeholderTextColor={Colors[colorScheme ?? "light"].icon}
-                  className="border border-border rounded-lg px-4 py-3 text-foreground bg-background"
+                  className="px-4 py-3"
                 />
               </View>
 
@@ -223,7 +221,7 @@ export default function OvertimeRequestScreen() {
                   onChangeText={setStartTime}
                   placeholder="HH:mm"
                   placeholderTextColor={Colors[colorScheme ?? "light"].icon}
-                  className="border border-border rounded-lg px-4 py-3 text-foreground bg-background"
+                  className="px-4 py-3"
                 />
               </View>
 
@@ -234,7 +232,7 @@ export default function OvertimeRequestScreen() {
                   onChangeText={setEndTime}
                   placeholder="HH:mm"
                   placeholderTextColor={Colors[colorScheme ?? "light"].icon}
-                  className="border border-border rounded-lg px-4 py-3 text-foreground bg-background"
+                  className="px-4 py-3"
                 />
               </View>
 
@@ -248,7 +246,7 @@ export default function OvertimeRequestScreen() {
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
-                  className="border border-border rounded-lg px-4 py-3 text-foreground bg-background h-28"
+                  className="h-28 px-4 py-3"
                 />
               </View>
 
@@ -293,7 +291,7 @@ export default function OvertimeRequestScreen() {
               </Button>
               <Button className="flex-1" onPress={handleSubmit} disabled={isSubmitting}>
                 {isSubmitting ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <Spinner size="small" color="#fff" />
                 ) : (
                   <Text className="text-primary-foreground font-bold">Kirim</Text>
                 )}

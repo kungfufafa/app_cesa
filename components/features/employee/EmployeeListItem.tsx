@@ -1,5 +1,5 @@
 import React from "react";
-import { Image, Pressable, TouchableOpacity, View } from "react-native";
+import { Image, Pressable, View } from "react-native";
 import { Text } from "@/components/ui/text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { type Employee } from "@/services/employee";
@@ -53,9 +53,8 @@ export function EmployeeListItem({ employee }: EmployeeListItemProps) {
   const hasWa = Boolean(waPhone);
 
   return (
-    <TouchableOpacity
+    <Pressable
       className="flex-row items-center p-4 bg-card rounded-xl border border-border active:bg-secondary/40"
-      activeOpacity={0.7}
       onPress={() => router.push(`/employee/${employee.id}`)}
     >
       <View className="w-11 h-11 rounded-full bg-secondary/60 border border-border items-center justify-center overflow-hidden mr-4">
@@ -124,6 +123,6 @@ export function EmployeeListItem({ employee }: EmployeeListItemProps) {
           <IconSymbol name="message.fill" size={16} color="#71717a" />
         </Pressable>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }

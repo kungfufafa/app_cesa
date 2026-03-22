@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  Pressable,
   ScrollView,
   View,
 } from "react-native";
@@ -10,12 +8,15 @@ import { Href, Stack, router, useLocalSearchParams } from "expo-router";
 
 import { HelpdeskAttachmentList } from "@/components/features/helpdesk/HelpdeskAttachmentList";
 import { HelpdeskCommentComposer } from "@/components/features/helpdesk/HelpdeskCommentComposer";
+import { HelpdeskRichText } from "@/components/features/helpdesk/HelpdeskRichText";
 import { HelpdeskReasonModal } from "@/components/features/helpdesk/HelpdeskReasonModal";
 import { HelpdeskStatusBadge } from "@/components/features/helpdesk/HelpdeskStatusBadge";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScreenHeader } from "@/components/ui/ScreenHeader";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ScreenHeader } from "@/components/ui/screen-header";
+import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import {
   useAddHelpdeskComment,
@@ -49,10 +50,8 @@ export default function HelpdeskDetailScreen() {
     return (
       <View className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
-        <ScreenHeader title="Detail Tiket" />
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#2563eb" />
-        </View>
+        <ScreenHeader title="Detail Tiket" onBackPress={() => router.back()} />
+        <Spinner centered size="large" color="#2563eb" />
       </View>
     );
   }
@@ -61,10 +60,12 @@ export default function HelpdeskDetailScreen() {
     return (
       <View className="flex-1 bg-background">
         <Stack.Screen options={{ headerShown: false }} />
-        <ScreenHeader title="Detail Tiket" />
-        <View className="flex-1 justify-center items-center px-6">
-          <Text className="font-semibold">Gagal memuat detail tiket.</Text>
-        </View>
+        <ScreenHeader title="Detail Tiket" onBackPress={() => router.back()} />
+        <EmptyState
+          className="flex-1"
+          title="Gagal memuat detail tiket."
+          description="Coba muat ulang halaman ini beberapa saat lagi."
+        />
       </View>
     );
   }
@@ -115,14 +116,17 @@ export default function HelpdeskDetailScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenHeader
         title="Detail Tiket"
+        onBackPress={() => router.back()}
         rightAction={
           ticket.abilities.update ? (
-            <Pressable
-              className="px-3 py-2 rounded-full bg-white/15"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full bg-white/15 px-3"
               onPress={() => router.push(`/helpdesk/${ticket.id}/edit` as Href)}
             >
               <Text className="text-white font-semibold text-sm">Edit</Text>
-            </Pressable>
+            </Button>
           ) : (
             <View className="w-9 h-9" />
           )
@@ -152,13 +156,11 @@ export default function HelpdeskDetailScreen() {
 
               <View className="flex-row flex-wrap gap-2">
                 {ticket.priority?.name ? (
-                  <View
-                    className={`rounded-full border px-3 py-1 ${priorityClasses.container}`}
-                  >
-                    <Text className={`text-xs font-semibold ${priorityClasses.text}`}>
+                  <Badge variant="outline" className={priorityClasses.container}>
+                    <Text className={priorityClasses.text}>
                       {ticket.priority.name}
                     </Text>
-                  </View>
+                  </Badge>
                 ) : null}
                 {ticket.unit?.name ? (
                   <Badge variant="secondary">
@@ -176,7 +178,14 @@ export default function HelpdeskDetailScreen() {
               <InfoRow label="Email Pelapor" value={ticket.owner?.email || "-"} />
               <InfoRow label="Responsible" value={ticket.responsible?.name || "Belum ditentukan"} />
               <InfoRow label="Perusahaan" value={ticket.company?.name || "-"} />
-              <InfoRow label="Deskripsi" value={ticket.description || "-"} multiline />
+              <View className="gap-1">
+                <Text className="text-sm text-muted-foreground">Deskripsi</Text>
+                <HelpdeskRichText
+                  html={ticket.description}
+                  className="leading-6"
+                  showInlineLinks
+                />
+              </View>
 
               <HelpdeskAttachmentList
                 existingAttachments={ticket.attachments}
@@ -317,7 +326,11 @@ export default function HelpdeskDetailScreen() {
                       ) : null}
                     </View>
 
-                    <Text className="text-sm leading-6">{comment.comment}</Text>
+                    <HelpdeskRichText
+                      html={comment.comment}
+                      className="text-sm leading-6"
+                      showInlineLinks
+                    />
 
                     <HelpdeskAttachmentList
                       existingAttachments={comment.attachments}

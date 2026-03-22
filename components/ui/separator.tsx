@@ -1,6 +1,5 @@
 import { cn } from '@/lib/utils';
 import * as SeparatorPrimitive from '@rn-primitives/separator';
-import type * as React from 'react';
 
 function Separator({
   className,

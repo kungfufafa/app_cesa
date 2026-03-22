@@ -1,11 +1,11 @@
-import { SheetHeader, SheetModal, SheetView } from "@/components/ui/BottomSheet";
+import { SheetHeader, SheetModal, SheetView } from "@/components/ui/bottom-sheet";
 import { Text } from "@/components/ui/text";
 import { IconSymbol, type IconSymbolName } from "@/components/ui/icon-symbol";
 import { useRequestBottomSheet } from "@/store/useRequestBottomSheet";
 import { openExternalUrl } from "@/lib/open-url";
 import { Href, router } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import { Alert, TouchableOpacity, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 type MenuItem = {
@@ -88,7 +88,7 @@ export function RequestBottomSheet() {
         />
         <View className="gap-2">
           {MENU_ITEMS.map((item) => (
-            <TouchableOpacity
+            <Pressable
               key={item.id}
               className="flex-row items-center p-4 rounded-xl border border-border bg-card active:bg-secondary"
               onPress={() => handleMenuPress(item)}
@@ -103,7 +103,7 @@ export function RequestBottomSheet() {
               <Text className="font-medium text-base text-foreground">
                 {item.title}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </View>
       </SheetView>

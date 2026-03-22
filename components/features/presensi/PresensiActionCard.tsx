@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,6 +30,12 @@ export function PresensiActionCard({
 }: PresensiActionCardProps) {
     const router = useRouter();
     const { ensurePermissions, isChecking: isCheckingPermissions } = usePresensiPermissions();
+    const shiftName = schedule?.shift.name?.trim() || "Jadwal Kerja";
+    const officeName = schedule?.office.name?.trim() || "Lokasi belum tersedia";
+    const scheduleTimeLabel =
+        schedule?.shift.start_time && schedule?.shift.end_time
+            ? `${schedule.shift.start_time.slice(0, 5)} - ${schedule.shift.end_time.slice(0, 5)}`
+            : "Jam belum tersedia";
 
     if (isLoading) {
         return (
@@ -89,14 +95,14 @@ export function PresensiActionCard({
                     {schedule ? (
                         <>
                             <Text className="text-lg font-bold text-foreground mb-1">
-                                {schedule.shift.name}
+                                {shiftName}
                             </Text>
                             <Text className="text-3xl font-extrabold text-foreground mb-2">
-                                {schedule.shift.start_time?.slice(0, 5)} - {schedule.shift.end_time?.slice(0, 5)}
+                                {scheduleTimeLabel}
                             </Text>
                             <View className="flex-row items-center mb-4">
                                 <Text className="text-primary text-sm font-medium">
-                                    Lokasi: {schedule.office.name}
+                                    Lokasi: {officeName}
                                 </Text>
                             </View>
                         </>

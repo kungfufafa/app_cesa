@@ -1,5 +1,6 @@
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import {
   usePresensiHariIni,
@@ -9,7 +10,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, StatusBar, View } from "react-native";
+import { Alert, Platform, Pressable, StatusBar, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { calculateDistance } from "@/lib/geo";
 import { usePresensiPermissions } from "@/hooks/usePresensiPermissions";
@@ -45,6 +46,14 @@ export default function LocationCheckScreen() {
   const { ensurePermissions: ensurePresensiPermissions, isChecking: isCheckingPermissions } = usePresensiPermissions();
   const [showRefreshSuccess, setShowRefreshSuccess] = useState(false);
   const refreshBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const officeLatitude = schedule?.office.latitude ?? null;
+  const officeLongitude = schedule?.office.longitude ?? null;
+  const officeRadius = schedule?.office.radius ?? null;
+  const hasOfficeCoordinates =
+    typeof officeLatitude === "number" &&
+    Number.isFinite(officeLatitude) &&
+    typeof officeLongitude === "number" &&
+    Number.isFinite(officeLongitude);
 
   const showRefreshSuccessBanner = () => {
     if (refreshBannerTimerRef.current) {
@@ -127,26 +136,27 @@ export default function LocationCheckScreen() {
   }, []);
 
   useEffect(() => {
-    if (location && schedule?.office) {
+    if (location && hasOfficeCoordinates) {
       const dist = calculateDistance(
         location.coords.latitude,
         location.coords.longitude,
-        schedule.office.latitude,
-        schedule.office.longitude
+        officeLatitude as number,
+        officeLongitude as number
       );
       setDistance(Number.isFinite(dist) ? dist : null);
       return;
     }
 
     setDistance(null);
-  }, [location, schedule]);
+  }, [hasOfficeCoordinates, location, officeLatitude, officeLongitude]);
 
   const canProceed = useMemo(() => {
     if (!schedule) return false;
     if (schedule.is_wfa) return true;
+    if (!hasOfficeCoordinates || officeRadius === null) return false;
     if (distance === null) return false;
-    return distance <= schedule.office.radius;
-  }, [distance, schedule]);
+    return distance <= officeRadius;
+  }, [distance, hasOfficeCoordinates, officeRadius, schedule]);
 
   const handleNext = async () => {
     const netState = await fetchNetInfo();
@@ -181,10 +191,15 @@ export default function LocationCheckScreen() {
     if (!canProceed) {
       if (schedule.is_wfa) {
         Alert.alert("Validasi Lokasi", "Menunggu pembacaan lokasi. Coba lagi.");
+      } else if (!hasOfficeCoordinates || officeRadius === null) {
+        Alert.alert(
+          "Lokasi Kantor Belum Lengkap",
+          "Koordinat atau radius kantor belum tersedia dari server. Coba lagi beberapa saat lagi."
+        );
       } else {
         Alert.alert(
           "Di Luar Area Presensi",
-          `Anda harus berada dalam radius ${schedule.office.radius} meter dari kantor.`
+          `Anda harus berada dalam radius ${officeRadius} meter dari kantor.`
         );
       }
       return;
@@ -215,9 +230,9 @@ export default function LocationCheckScreen() {
   };
 
   const fallbackLatitude =
-    location?.coords.latitude ?? schedule?.office.latitude ?? -6.2;
+    location?.coords.latitude ?? officeLatitude ?? -6.2;
   const fallbackLongitude =
-    location?.coords.longitude ?? schedule?.office.longitude ?? 106.816666;
+    location?.coords.longitude ?? officeLongitude ?? 106.816666;
 
   const handleOpenInfo = () => {
     Alert.alert(
@@ -330,23 +345,23 @@ export default function LocationCheckScreen() {
             : undefined
         }
       >
-        {schedule?.office ? (
+        {schedule?.office && hasOfficeCoordinates ? (
           <>
             <Marker
               coordinate={{
-                latitude: schedule.office.latitude,
-                longitude: schedule.office.longitude,
+                latitude: officeLatitude as number,
+                longitude: officeLongitude as number,
               }}
               title={schedule.office.name}
             />
 
-            {!schedule.is_wfa ? (
+            {!schedule.is_wfa && officeRadius !== null ? (
               <Circle
                 center={{
-                  latitude: schedule.office.latitude,
-                  longitude: schedule.office.longitude,
+                  latitude: officeLatitude as number,
+                  longitude: officeLongitude as number,
                 }}
-                radius={schedule.office.radius}
+                radius={officeRadius}
                 fillColor="rgba(37,99,235,0.14)"
                 strokeColor="rgba(37,99,235,0.45)"
                 strokeWidth={1}
@@ -384,7 +399,7 @@ export default function LocationCheckScreen() {
             hitSlop={8}
           >
             {isRefreshingLocation ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <Spinner size="small" color="#fff" />
             ) : (
               <IconSymbol name="arrow.clockwise" size={18} color="#fff" />
             )}
@@ -417,7 +432,7 @@ export default function LocationCheckScreen() {
           className="h-14 rounded-2xl shadow-xl"
         >
           {isCheckingPermissions ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <Spinner size="small" color="#fff" />
           ) : (
             <Text className="text-primary-foreground font-bold">Lanjut ke Kamera</Text>
           )}

@@ -2,14 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import {
   SheetHeader,
   SheetModal,
   SheetView,
-} from "@/components/ui/BottomSheet";
-import { Input } from "@/components/ui/Input";
+} from "@/components/ui/bottom-sheet";
 import { Text } from "@/components/ui/text";
+import { Textarea } from "@/components/ui/textarea";
 import {
   getHelpdeskActionLabel,
   getHelpdeskActionReasonLabel,
@@ -83,13 +83,11 @@ export function HelpdeskReasonModal({
         {requiresReason ? (
           <View className="mt-4 gap-2">
             <Text className="font-medium">{getHelpdeskActionReasonLabel(action)}</Text>
-            <Input
-              multiline
+            <Textarea
               numberOfLines={4}
               value={reason}
               onChangeText={setReason}
               placeholder={getHelpdeskActionReasonPlaceholder(action)}
-              textAlignVertical="top"
               className="min-h-28 py-3"
             />
           </View>
